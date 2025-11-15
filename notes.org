@@ -1,0 +1,65 @@
+MLP ingredients:
+1. Linear layer
+2. Activation function
+
+Matrix multiplication dimensionality:
+( M x N ) X (N x G) = (M x G)
+
+So if I receive an image of size 128*128 and I want to project it to
+5 features, W = (128*5).
+Input matrix -> row vectors
+Multiplier matrx -> column vectors
+Dot product between each row & column vector
+
+(4 x 3) X (3 x 2) = (4 x 2)
+
+|1 2 3|    |x y|    |1x+2z+3q 1y+2w+3t|
+|4 5 6|    |z w|    |4x+5z+6q 4y+5w+6t|
+|7 8 9|    |q t|    |7x+8z+9q 7y+8w+9t|
+|1 2 3|             |1x+2z+3q 1y+2w+3t|
+
+3,1 * 1,4 -> 3,4
+
+|0|		   |0*1 0*2 0*3 0*4|
+|4| * |1 2 3 4|    |4*1 4*2 4*3 4*4|
+|6|                |6*1 6*2 6*3 6*4|
+
+
+m = malloc(x.rows, w.cols)
+
+for c in w.cols:
+    for i in x.rows:
+        for j in w.rows:
+            m[i][c] += x[i][j] * w[j][c]
+
+
+m[0,0] = x[0,0]*w[0,0] + x[0,1]*w[1,0] + x[0,2]*w[2,0]
+m[0,1] = x[0,0]*w[0,1] + x[0,1]*w[1,1] + x[0,2]*w[2,1]
+
+m[1,0] = x[1,0]*w[0,0] + x[1,1]*w[1,0] + x[1,2]*w[2,0]
+m[1,1] = x[1,0]*w[0,1] + x[1,1]*w[1,1] + x[1,2]*w[2,1]
+
+m[2,0] = x[2,0]*w[0,0] + x[2,1]*w[1,0] + x[2,2]*w[2,0]
+m[2,1] = x[2,0]*w[0,1] + x[2,1]*w[1,1] + x[2,2]*w[2,1]
+
+m[3,0] = x[3,0]*w[0,0] + x[3,1]*w[1,0] + x[3,2]*w[2,0]
+m[3,1] = x[3,0]*w[0,1] + x[3,1]*w[1,1] + x[3,2]*w[2,1]
+
+
+
+Forward pass:
+1. Receive input (accept right dimensionality)
+2. Loop through layers:
+   * Pass the tensor through the layers
+   * _How to treat batch dimension in C_?
+3. Compute loss
+
+
+Backward pass:
+1. Kick-off backprop: compute loss grads wrt network output
+2. Chain-rule them through softmax (classification) + each
+   (linear layer, activation fuction) tuple.
+   Each module (besides loss) needs to remember the last input they worked on.
+   Linear module has learnable parameters (weights + bias).
+3. Now that each layer has its own gradients, perform gradient descent on the
+   learnable parameters.
