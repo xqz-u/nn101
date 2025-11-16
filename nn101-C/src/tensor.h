@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "vector.h"
+
 typedef struct Tensor Tensor;
 struct Tensor {
     double* data;
@@ -34,6 +36,7 @@ size_t indexTensor(Tensor* T, size_t k, size_t i, size_t j);
 void printTensor(Tensor* T);
 double tensorGet(Tensor* T, size_t k, size_t i, size_t j);
 /* void tensorSet(Tensor* T, size_t k, size_t i, size_t j, double value); */
+void addTensorAndVector(Tensor* X, Vector* b);
 
 size_t indexMatrix(MatrixView* Mv, size_t i, size_t j);
 double matrixGet(MatrixView* Mv, size_t i, size_t j);

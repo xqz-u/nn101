@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "vector.h"
+
 #include "tensor.h"
 
 /* ------------------ TENSOR ------------------ */
@@ -161,6 +163,17 @@ void batchedMatMul(Tensor* X, MatrixView* W, Tensor* Y) {
         getMatrixView(k, Y, &kth_output);
 
         matMul(&kth_input, W, &kth_output);
+    }
+}
+
+void addTensorAndVector(Tensor* X, Vector* b) {
+    assert(X->features == b->size);
+    for (size_t k = 0; k < X->batch; k++) {
+        for (size_t i = 0; i < X->n; i++) {
+            for (size_t j = 0; j < X->features; j++) {
+                X->data[indexTensor(X, k, i, j)] += b->data[j];
+            }
+        }
     }
 }
 
