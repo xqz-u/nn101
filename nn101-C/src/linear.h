@@ -4,23 +4,23 @@
 #include <stddef.h>
 
 #include "tensor.h"
-#include "vector.h"
 
 typedef struct Linear Linear;
 struct Linear {
     size_t in_features;
     size_t out_features;
 
-    Matrix* weights;
-    Matrix* weights_T;
-    Matrix* weights_grad;
-    Vector* bias;
-    Vector* bias_grad;
+    Tensor* weights;
+    Tensor* weights_grad;
+    Tensor* bias;
+    Tensor* bias_grad;
 
     Tensor* last_input;
 
-    void (*forward)(Linear* self, Tensor* X, Tensor* Y);
-    void (*backward)(Linear* self, Tensor* dLdX, Tensor* Y);
+    Tensor* weights_T;
+
+    void (*forward)(Linear* layer, Tensor* X, Tensor* Y);
+    void (*backward)(Linear* layer, Tensor* grad_in, Tensor* inputs_grad);
 };
 
 Linear* createLinearLayer(size_t in_features, size_t out_features);

@@ -4,7 +4,6 @@
 
 #include "linear.h"
 #include "tensor.h"
-#include "vector.h"
 
 #define SAMPLES 4
 #define IN_COUNT 3
@@ -76,7 +75,7 @@ void test_linearForward(void) {
     Linear* layer = createLinearLayer(IN_FEATURES, OUT_FEATURES);
 
     /* bias vector of 1 */
-    for (size_t i = 0; i < layer->bias->size; i++) {
+    for (size_t i = 0; i < layer->bias->features; i++) {
         layer->bias->data[i] = 1.f;
     }
     /* printVector(layer->bias); */
@@ -89,11 +88,11 @@ void test_linearForward(void) {
     /* initialize the weights */
     for (size_t i = 1; i < OUT_FEATURES + 1; i++) {
         for (size_t j = 0; j < IN_FEATURES; j++) {
-            size_t idx = indexMatrix(&layer->weights->view, i - 1, j);
-            layer->weights->view.data[idx] = (double)i;
+            size_t idx = indexMatrix(layer->weights, i - 1, j);
+            layer->weights->data[idx] = (double)i;
         }
     }
-    /* printMatrix(&layer->weights->view); */
+    /* printMatrix(layer->weights); */
 
     /* initialize output */
     Tensor* Y = createTensor(SAMPLES, IN_COUNT, OUT_FEATURES);

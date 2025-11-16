@@ -3,8 +3,6 @@
 
 #include <stddef.h>
 
-#include "vector.h"
-
 typedef struct Tensor Tensor;
 struct Tensor {
     double* data;
@@ -13,45 +11,28 @@ struct Tensor {
     size_t features;
 };
 
-/* Non-owner structure: do not call free on `.data`. Used to index into larger
- * owner structures. */
-typedef struct MatrixView MatrixView;
-struct MatrixView {
-    double* data;
-    size_t n;
-    size_t features;
-};
-
-/* Owner structure(unused atm): must call free on `.data`.typedef struct Matrix
- * Matrix; */
-typedef struct Matrix Matrix;
-struct Matrix {
-    MatrixView view;
-};
-
 Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1);
 void destroyTensor(Tensor* T);
-
 size_t indexTensor(Tensor* T, size_t k, size_t i, size_t j);
-void printTensor(Tensor* T);
 double tensorGet(Tensor* T, size_t k, size_t i, size_t j);
 /* void tensorSet(Tensor* T, size_t k, size_t i, size_t j, double value); */
-void addTensorAndVector(Tensor* X, Vector* b);
+void printMatrix(Tensor* M);
+void printTensor(Tensor* T);
+void getMatrixView(size_t k, Tensor* T, Tensor* M);
 
-size_t indexMatrix(MatrixView* Mv, size_t i, size_t j);
-double matrixGet(MatrixView* Mv, size_t i, size_t j);
-void matrixSet(MatrixView* Mv, size_t i, size_t j, double value);
-void printMatrix(MatrixView* Mv);
-void transpose(MatrixView* M, MatrixView* Mt);
-void matMul(MatrixView* A, MatrixView* B, MatrixView* C);
-void copyMatrixRow(size_t rowIdx, MatrixView* Mv, double c[]);
-void copyMatrixCol(size_t colIdx, MatrixView* Mv, double c[]);
+Tensor* createVector(size_t size);
+double dotProduct(Tensor* a, Tensor* b);
+void addTensorAndVector(Tensor* X, Tensor* b);
 
-Matrix* createMatrix(size_t rows, size_t cols);
-void destroyMatrix(Matrix* M);
-Matrix* onesMatrix(size_t rows, size_t cols);
-
-void getMatrixView(size_t k, Tensor* T, MatrixView* M);
-void batchedMatMul(Tensor* X, MatrixView* W, Tensor* Y);
+Tensor* createMatrix(size_t rows, size_t cols);
+Tensor* onesMatrix(size_t rows, size_t cols);
+size_t indexMatrix(Tensor* M, size_t i, size_t j);
+double matrixGet(Tensor* M, size_t i, size_t j);
+void matrixSet(Tensor* M, size_t i, size_t j, double value);
+void copyMatrixRow(size_t rowIdx, Tensor* M, double c[]);
+void copyMatrixCol(size_t colIdx, Tensor* M, double c[]);
+void transpose(Tensor* M, Tensor* Mt);
+void matMul(Tensor* A, Tensor* B, Tensor* C);
+void batchedMatMul(Tensor* X, Tensor* W, Tensor* Y);
 
 #endif  // TENSOR_H

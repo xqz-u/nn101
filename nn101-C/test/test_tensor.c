@@ -59,36 +59,62 @@ void tearDown(void) {
     sleep(1);
 }
 
+void testEmptyVector(void) {
+    double tmp[] = {0, 0, 0, 0, 0};
+    Tensor* a = createVector(5);
+    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(tmp, a->data, a->features);
+    destroyTensor(a);
+}
+
+void testDotProduct(void) {
+    size_t size = 5;
+
+    Tensor* a = createVector(size);
+    for (size_t i = 0; i < a->features; i++) {
+        a->data[i] = (double)(i + 1);
+    }
+
+    Tensor* b = createVector(size);
+    for (size_t i = 0; i < b->features; i++) {
+        b->data[i] = 1.f;
+    };
+
+    TEST_ASSERT_EQUAL_DOUBLE(15.f, dotProduct(a, b));
+
+    destroyTensor(a);
+    destroyTensor(b);
+}
+
 void test_matrixTranspose(void) {
-    Matrix* M = createMatrix(SAMPLES, IN_FEATURES);
+    Tensor* M = createMatrix(SAMPLES, IN_FEATURES);
 
     for (size_t i = 0; i < SAMPLES; i++) {
         for (size_t j = 0; j < IN_FEATURES; j++) {
-            size_t idx = indexMatrix(&M->view, i, j);
-            M->view.data[idx] = (double)(idx + 1);
+            size_t idx = indexMatrix(M, i, j);
+            M->data[idx] = (double)(idx + 1);
         }
     }
 
-    Matrix* Mt = createMatrix(M->view.features, M->view.n);
-    transpose(&M->view, &Mt->view);
+    Tensor* Mt = createMatrix(M->features, M->n);
+    transpose(M, Mt);
 
-    /* printMatrix(&Mt->view); */
+    /* printMatrix(Mt); */
     /* printf("\n"); */
-    /* printMatrix(&M->view); */
+    /* printMatrix(M); */
     /* printf("\n"); */
 
-    double M_i[M->view.features];
-    double Mt_i[Mt->view.n];
+    double M_i[M->features];
+    double Mt_i[Mt->n];
     for (size_t i = 0; i < SAMPLES; i++) {
-        copyMatrixRow(i, &M->view, M_i);
-        copyMatrixCol(i, &Mt->view, Mt_i);
-        /* printRealArray(M_i, M->view.features); */
+        copyMatrixRow(i, M, M_i);
+        copyMatrixCol(i, Mt, Mt_i);
+        /* printRealArray(M_i, M->features); */
         /* printRealArray(Mt_i, Mt->n); */
-        TEST_ASSERT_EQUAL_DOUBLE_ARRAY(M_i, Mt_i, Mt->view.features);
+        TEST_ASSERT_EQUAL_DOUBLE_ARRAY(M_i, Mt_i, Mt->features);
     }
 
-    destroyMatrix(M);
-    destroyMatrix(Mt);
+    destroyTensor(M);
+    destroyTensor(Mt);
 }
 
 void test_matrixProduct(void) {
@@ -114,23 +140,23 @@ void test_matrixProduct(void) {
                                            /*  */
                                            90, 60};
 
-    MatrixView A = {.data = x, .n = SAMPLES, .features = IN_DIMS};
-    MatrixView B = {.data = w, .n = IN_DIMS, .features = OUT_DIMS};
+    Tensor A = {.data = x, .batch = 1, .n = SAMPLES, .features = IN_DIMS};
+    Tensor B = {.data = w, .batch = 1, .n = IN_DIMS, .features = OUT_DIMS};
 
-    /* printMatrix(&A->view); */
+    /* printMatrix(A); */
     /* printf("\n"); */
-    /* printMatrix(&B->view); */
+    /* printMatrix(B); */
     /* printf("\n"); */
 
-    Matrix* C = createMatrix(SAMPLES, OUT_DIMS);
-    matMul(&A, &B, &C->view);
-    /* printMatrix(&C->view); */
+    Tensor* C = createMatrix(SAMPLES, OUT_DIMS);
+    matMul(&A, &B, C);
+    /* printMatrix(C); */
 
-    for (size_t i = 0; i < C->view.n * C->view.features; i++) {
-        TEST_ASSERT_EQUAL_DOUBLE(C->view.data[i], expected[i]);
+    for (size_t i = 0; i < C->n * C->features; i++) {
+        TEST_ASSERT_EQUAL_DOUBLE(C->data[i], expected[i]);
     }
 
-    destroyMatrix(C);
+    destroyTensor(C);
 }
 
 void test_indexTensor(void) {
@@ -139,7 +165,8 @@ void test_indexTensor(void) {
         for (size_t i = 0; i < X->n; i++) {
             for (size_t j = 0; j < X->features; j++) {
                 double value = tensorGet(X, k, i, j);
-                /* printf("(%d %d %d), %d -> %.2f, %.2f\n", k, i, j, counter, */
+                /* printf("(%d %d %d), %d -> %.2f, %.2f\n", k, i, j,
+counter, */
                 /*        value, input_tensor_array[counter]); */
                 TEST_ASSERT_EQUAL_DOUBLE(value, input_tensor_array[counter]);
                 counter++;
@@ -184,23 +211,23 @@ void test_batchedMatrixProduct(void) {
                                          //
                                          23, 46};
 
-    Matrix* ones = onesMatrix(IN_FEATURES, OUT_FEATURES);
+    Tensor* ones = onesMatrix(IN_FEATURES, OUT_FEATURES);
     for (size_t i = 0; i < IN_FEATURES; i++) {
-        double value = matrixGet(&ones->view, i, 1);
-        matrixSet(&ones->view, i, 1, value * 2);
+        size_t idx = indexMatrix(ones, i, 1);
+        ones->data[idx] *= 2;
     }
-    /* printMatrix(&ones->view); */
+    /* printMatrix(ones); */
 
     Tensor* Y = createTensor(SAMPLES, IN_COUNT, OUT_FEATURES);
 
-    batchedMatMul(X, &ones->view, Y);
+    batchedMatMul(X, ones, Y);
     /* printTensor(Y); */
 
     for (size_t i = 0; i < OUTPUT_FLAT_SIZE; i++) {
         TEST_ASSERT_EQUAL_DOUBLE(Y->data[i], expected[i]);
     }
 
-    destroyMatrix(ones);
+    destroyTensor(ones);
     destroyTensor(Y);
 }
 

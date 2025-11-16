@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "vector.h"
-
 #include "tensor.h"
 
 /* ------------------ TENSOR ------------------ */
@@ -46,68 +44,111 @@ double tensorGet(Tensor* T, size_t k, size_t i, size_t j) {
 /*     T->data[indexTensor(T, k, i, j)] = value; */
 /* } */
 
-/* ------------------ MATRIX ------------------ */
-
-Matrix* createMatrix(size_t rows, size_t cols) {
-    Matrix* M = malloc(sizeof(Matrix));
-    if (M == NULL) {
-        return NULL;
+void printMatrix(Tensor* M) {
+    for (size_t i = 0; i < M->n; i++) {
+        printf("|%.2f", matrixGet(M, i, 0));
+        for (size_t j = 1; j < M->features; j++) {
+            printf(", %.2f", matrixGet(M, i, j));
+        }
+        printf("|\n");
     }
-    M->view.data = calloc(rows * cols, sizeof(double));
-    if (M->view.data == NULL) {
-        free(M);
-        return NULL;
-    }
-    M->view.n = rows;
-    M->view.features = cols;
-    return M;
 }
 
-void destroyMatrix(Matrix* M) {
-    if (M == NULL) {
+void printTensor(Tensor* T) {
+    Tensor Kth = {};
+
+    for (size_t k = 0; k < T->batch; k++) {
+        getMatrixView(k, T, &Kth);
+        printMatrix(&Kth);
+        printf("\n");
+    }
+}
+
+/* NOTE Do not call `destroyTensor(.)` on Tensors created by this function! */
+void getMatrixView(size_t k, Tensor* T, Tensor* M) {
+    if (T == NULL || M == NULL) {
         return;
     }
-    free(M->view.data);
-    free(M);
+    assert(k < T->batch);
+
+    /* point to the beginning of the k-th data block, running from: */
+    /* [k * T->n * T->features, k * T->n * T->features + T->n * T->features] */
+    M->data = &T->data[k * T->n * T->features];
+    M->batch = 1;
+    M->n = T->n;
+    M->features = T->features;
 }
 
-Matrix* onesMatrix(size_t rows, size_t cols) {
-    Matrix* M = createMatrix(rows, cols);
+/* ------------------ VECTOR ------------------ */
+
+Tensor* createVector(size_t size) {
+    return createTensor(1, 1, size);
+}
+
+double dotProduct(Tensor* a, Tensor* b) {
+    assert(a->batch == 1 && b->batch == 1 && a->n == 1 && b->n == 1 &&
+           a->features == b->features);
+    double z = 0;
+    for (size_t i = 0; i < a->features; i++) {
+        z += a->data[i] * b->data[i];
+    }
+    return z;
+}
+
+void addTensorAndVector(Tensor* X, Tensor* b) {
+    assert(X->features == b->features && b->batch == 1);
+    for (size_t k = 0; k < X->batch; k++) {
+        for (size_t i = 0; i < X->n; i++) {
+            for (size_t j = 0; j < X->features; j++) {
+                X->data[indexTensor(X, k, i, j)] += b->data[j];
+            }
+        }
+    }
+}
+
+/* ------------------ MATRIX ------------------ */
+
+Tensor* createMatrix(size_t rows, size_t cols) {
+    return createTensor(1, rows, cols);
+}
+
+Tensor* onesMatrix(size_t rows, size_t cols) {
+    Tensor* M = createMatrix(rows, cols);
     for (size_t i = 0; i < rows * cols; i++) {
-        M->view.data[i] = 1;
+        M->data[i] = 1.f;
     }
     return M;
 }
 
-size_t indexMatrix(MatrixView* Mv, size_t i, size_t j) {
-    assert(i < Mv->n && j < Mv->features);
-    return i * Mv->features + j;
+size_t indexMatrix(Tensor* M, size_t i, size_t j) {
+    return indexTensor(M, 0, i, j);
 }
 
-double matrixGet(MatrixView* Mv, size_t i, size_t j) {
-    return Mv->data[indexMatrix(Mv, i, j)];
+double matrixGet(Tensor* M, size_t i, size_t j) {
+    return M->data[indexMatrix(M, i, j)];
 }
 
-void matrixSet(MatrixView* Mv, size_t i, size_t j, double value) {
-    Mv->data[indexMatrix(Mv, i, j)] = value;
+void matrixSet(Tensor* M, size_t i, size_t j, double value) {
+    M->data[indexMatrix(M, i, j)] = value;
 }
 
-void copyMatrixRow(size_t rowIdx, MatrixView* Mv, double c[]) {
-    assert(rowIdx < Mv->n);
-    for (size_t i = 0; i < Mv->features; i++) {
-        c[i] = matrixGet(Mv, rowIdx, i);
+void copyMatrixRow(size_t rowIdx, Tensor* M, double c[]) {
+    assert(M->batch == 1 && rowIdx < M->n);
+    for (size_t i = 0; i < M->features; i++) {
+        c[i] = matrixGet(M, rowIdx, i);
     }
 }
 
-void copyMatrixCol(size_t colIdx, MatrixView* Mv, double c[]) {
-    assert(colIdx < Mv->features);
-    for (size_t i = 0; i < Mv->n; i++) {
-        c[i] = matrixGet(Mv, i, colIdx);
+void copyMatrixCol(size_t colIdx, Tensor* M, double c[]) {
+    assert(M->batch == 1 && colIdx < M->features);
+    for (size_t i = 0; i < M->n; i++) {
+        c[i] = matrixGet(M, i, colIdx);
     }
 }
 
-void transpose(MatrixView* M, MatrixView* Mt) {
-    assert(M->n == Mt->features && M->features == Mt->n);
+void transpose(Tensor* M, Tensor* Mt) {
+    assert(M->batch == 1 && Mt->batch == 1 && M->n == Mt->features &&
+           M->features == Mt->n);
     for (size_t i = 0; i < M->n; i++) {
         for (size_t j = 0; j < M->features; j++) {
             matrixSet(Mt, j, i, matrixGet(M, i, j));
@@ -115,7 +156,7 @@ void transpose(MatrixView* M, MatrixView* Mt) {
     }
 }
 
-void matMul(MatrixView* A, MatrixView* B, MatrixView* C) {
+void matMul(Tensor* A, Tensor* B, Tensor* C) {
     assert(A->features == B->n);
     for (size_t c = 0; c < B->features; c++) {
         for (size_t i = 0; i < A->n; i++) {
@@ -130,59 +171,16 @@ void matMul(MatrixView* A, MatrixView* B, MatrixView* C) {
     }
 }
 
-void printMatrix(MatrixView* Mv) {
-    for (size_t i = 0; i < Mv->n; i++) {
-        printf("|%.2f", matrixGet(Mv, i, 0));
-        for (size_t j = 1; j < Mv->features; j++) {
-            printf(", %.2f", matrixGet(Mv, i, j));
-        }
-        printf("|\n");
-    }
-}
-
-void getMatrixView(size_t k, Tensor* T, MatrixView* M) {
-    if (T == NULL || M == NULL) {
-        return;
-    }
-    assert(k < T->batch);
-
-    /* point to the beginning of the k-th data block, running from: */
-    /* [k * T->n * T->features, k * T->n * T->features + T->n * T->features] */
-    M->data = &T->data[k * T->n * T->features];
-    M->n = T->n;
-    M->features = T->features;
-}
-
-void batchedMatMul(Tensor* X, MatrixView* W, Tensor* Y) {
+void batchedMatMul(Tensor* X, Tensor* W, Tensor* Y) {
+    assert(W->batch == 1);
     /* Modern C, Takeaway 5.5 #1: All variables should be initialized. */
-    MatrixView kth_input = {};
-    MatrixView kth_output = {};
+    Tensor kth_input = {};
+    Tensor kth_output = {};
 
     for (size_t k = 0; k < X->batch; k++) {
         getMatrixView(k, X, &kth_input);
         getMatrixView(k, Y, &kth_output);
 
         matMul(&kth_input, W, &kth_output);
-    }
-}
-
-void addTensorAndVector(Tensor* X, Vector* b) {
-    assert(X->features == b->size);
-    for (size_t k = 0; k < X->batch; k++) {
-        for (size_t i = 0; i < X->n; i++) {
-            for (size_t j = 0; j < X->features; j++) {
-                X->data[indexTensor(X, k, i, j)] += b->data[j];
-            }
-        }
-    }
-}
-
-void printTensor(Tensor* T) {
-    MatrixView Kth = {};
-
-    for (size_t k = 0; k < T->batch; k++) {
-        getMatrixView(k, T, &Kth);
-        printMatrix(&Kth);
-        printf("\n");
     }
 }
