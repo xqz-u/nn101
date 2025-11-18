@@ -58,40 +58,30 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
 
     layer->bias = createVector(out_features);
     if (layer->bias == NULL) {
-        free(layer);
+        destroyLinearLayer(layer);
         return NULL;
     }
     layer->bias_grad = tensorLike(layer->bias);
     if (layer->bias_grad == NULL) {
-        destroyTensor(layer->bias);
-        free(layer);
+        destroyLinearLayer(layer);
         return NULL;
     }
 
     layer->weights = createMatrix(out_features, in_features);
     if (layer->weights == NULL) {
-        destroyTensor(layer->bias);
-        destroyTensor(layer->bias_grad);
-        free(layer);
+        destroyLinearLayer(layer);
         return NULL;
     }
 
     layer->weights_grad = tensorLike(layer->weights);
     if (layer->weights_grad == NULL) {
-        destroyTensor(layer->weights);
-        destroyTensor(layer->bias);
-        destroyTensor(layer->bias_grad);
-        free(layer);
+        destroyLinearLayer(layer);
         return NULL;
     }
 
     layer->weights_T = createMatrix(in_features, out_features);
     if (layer->weights_T == NULL) {
-        destroyTensor(layer->weights);
-        destroyTensor(layer->weights_grad);
-        destroyTensor(layer->bias);
-        destroyTensor(layer->bias_grad);
-        free(layer);
+        destroyLinearLayer(layer);
         return NULL;
     }
 
@@ -112,11 +102,22 @@ void destroyLinearLayer(Linear* layer) {
     if (layer == NULL) {
         return;
     }
-    destroyTensor(layer->bias);
-    destroyTensor(layer->bias_grad);
-    destroyTensor(layer->weights);
-    destroyTensor(layer->weights_T);
-    destroyTensor(layer->weights_grad);
+
+    if (layer->bias != NULL) {
+        destroyTensor(layer->bias);
+    }
+    if (layer->bias_grad != NULL) {
+        destroyTensor(layer->bias_grad);
+    }
+    if (layer->weights != NULL) {
+        destroyTensor(layer->weights);
+    }
+    if (layer->weights_grad != NULL) {
+        destroyTensor(layer->weights_grad);
+    }
+    if (layer->weights_T != NULL) {
+        destroyTensor(layer->weights_T);
+    }
     if (layer->grad_in_T != NULL) {
         destroyTensor(layer->grad_in_T);
     }
