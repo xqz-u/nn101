@@ -121,25 +121,6 @@ void test_linearForward(void) {
     destroyLinearLayer(layer);
 }
 
-/* void test_linearInit(void) { */
-/*     Linear* layer = createLinearLayer(6, 3); */
-
-/*     Tensor* input = createTensor(1, 4, 6); */
-/*     for (size_t i = 0; i < input->flat_size; i++) { */
-/*         input[i] = (double)i + 1; */
-/*     } */
-/*     Tensor* output = createTensor(1, 4, 3); */
-
-/*     layer->setup(layer, input, rng); */
-/*     layer->forward(layer, input, output); */
-
-/*     printTensor(output); */
-
-/*     destroyTensor(input); */
-/*     destroyTensor(output); */
-/*     destroyLinearLayer(layer); */
-/* } */
-
 /* void test_linearBackward(void) { */
 /*     Linear* layer = createLinearLayer(6, 3); */
 

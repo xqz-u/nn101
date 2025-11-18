@@ -48,11 +48,11 @@ double tensorGet(Tensor* T, size_t k, size_t i, size_t j) {
 void printMatrix(Tensor* M) {
     printf("Shape: (%lu, %lu, %lu)\n", M->batch, M->n, M->features);
     for (size_t i = 0; i < M->n; i++) {
-        printf("| %.2f", matrixGet(M, i, 0));
-        for (size_t j = 1; j < M->features; j++) {
-            printf(", %.2f", matrixGet(M, i, j));
+        printf("[");
+        for (size_t j = 0; j < M->features; j++) {
+            printf(" %10.3f", matrixGet(M, i, j));
         }
-        printf(" |\n");
+        printf(" ]\n");
     }
 }
 

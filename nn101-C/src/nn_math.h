@@ -11,6 +11,7 @@ struct Fan {
     size_t out;
 };
 
+Fan computeFanInFanOut(Tensor* M);
 void kaimingUniform(Tensor* weights, gsl_rng* rng);
 
 #endif  // NN_MATH_H
