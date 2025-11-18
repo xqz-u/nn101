@@ -139,6 +139,7 @@
 #       '(_|-)special': # Add '-pedantic' to compilation of all files in all test executables with '_special' or '-special' in their names
         # - -pedantic
         '*':
+          - -std=c2x
           - -Wall
           - -pedantic
 #       '*':            # Add '-foo' to compilation of all files in all test executables
