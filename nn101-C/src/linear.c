@@ -14,13 +14,13 @@ void initLinearLayer(Linear* layer, gsl_rng* rng) {
 void buildComputationGraphLinear(Linear* layer, Tensor* example_input) {
     assert(example_input->batch == 1);
 
-    assert(layer->grad_in_T == NULL);
+    assert(layer->grad_in_T == nullptr);
     layer->grad_in_T = tensorLike(example_input);
-    assert(layer->grad_in_T != NULL);
+    assert(layer->grad_in_T != nullptr);
 
-    assert(layer->ones_like_input == NULL);
+    assert(layer->ones_like_input == nullptr);
     layer->ones_like_input = onesMatrix(1, example_input->n);
-    assert(layer->ones_like_input != NULL);
+    assert(layer->ones_like_input != nullptr);
 }
 
 void setupLinear(Linear* layer, Tensor* example_input, gsl_rng* rng) {
@@ -29,7 +29,7 @@ void setupLinear(Linear* layer, Tensor* example_input, gsl_rng* rng) {
 }
 
 void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
-    assert(layer->last_input == NULL);
+    assert(layer->last_input == nullptr);
 
     transpose(layer->weights, layer->weights_T);
     batchedMatMul(X, layer->weights_T, Y);
@@ -39,7 +39,7 @@ void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
 }
 
 void backwardLinear(Linear* layer, Tensor* grad_in, Tensor* inputs_grad) {
-    assert(layer->last_input != NULL);
+    assert(layer->last_input != nullptr);
 
     transpose(grad_in, layer->grad_in_T);
     matMul(layer->grad_in_T, layer->last_input, layer->weights_grad);
@@ -47,42 +47,42 @@ void backwardLinear(Linear* layer, Tensor* grad_in, Tensor* inputs_grad) {
 
     matMul(grad_in, layer->weights, inputs_grad);
 
-    layer->last_input = NULL;
+    layer->last_input = nullptr;
 }
 
 Linear* createLinearLayer(size_t in_features, size_t out_features) {
     Linear* layer = malloc(sizeof(Linear));
-    if (layer == NULL) {
-        return NULL;
+    if (layer == nullptr) {
+        return nullptr;
     }
 
     layer->bias = createVector(out_features);
-    if (layer->bias == NULL) {
+    if (layer->bias == nullptr) {
         destroyLinearLayer(layer);
-        return NULL;
+        return nullptr;
     }
     layer->bias_grad = tensorLike(layer->bias);
-    if (layer->bias_grad == NULL) {
+    if (layer->bias_grad == nullptr) {
         destroyLinearLayer(layer);
-        return NULL;
+        return nullptr;
     }
 
     layer->weights = createMatrix(out_features, in_features);
-    if (layer->weights == NULL) {
+    if (layer->weights == nullptr) {
         destroyLinearLayer(layer);
-        return NULL;
+        return nullptr;
     }
 
     layer->weights_grad = tensorLike(layer->weights);
-    if (layer->weights_grad == NULL) {
+    if (layer->weights_grad == nullptr) {
         destroyLinearLayer(layer);
-        return NULL;
+        return nullptr;
     }
 
     layer->weights_T = createMatrix(in_features, out_features);
-    if (layer->weights_T == NULL) {
+    if (layer->weights_T == nullptr) {
         destroyLinearLayer(layer);
-        return NULL;
+        return nullptr;
     }
 
     layer->forward = &forwardLinear;
@@ -91,43 +91,43 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
 
     layer->in_features = in_features;
     layer->out_features = out_features;
-    layer->last_input = NULL;
-    layer->grad_in_T = NULL;
-    layer->ones_like_input = NULL;
+    layer->last_input = nullptr;
+    layer->grad_in_T = nullptr;
+    layer->ones_like_input = nullptr;
 
     return layer;
 }
 
 void destroyLinearLayer(Linear* layer) {
-    if (layer == NULL) {
+    if (layer == nullptr) {
         return;
     }
 
-    if (layer->bias != NULL) {
+    if (layer->bias != nullptr) {
         destroyTensor(layer->bias);
     }
-    if (layer->bias_grad != NULL) {
+    if (layer->bias_grad != nullptr) {
         destroyTensor(layer->bias_grad);
     }
-    if (layer->weights != NULL) {
+    if (layer->weights != nullptr) {
         destroyTensor(layer->weights);
     }
-    if (layer->weights_grad != NULL) {
+    if (layer->weights_grad != nullptr) {
         destroyTensor(layer->weights_grad);
     }
-    if (layer->weights_T != NULL) {
+    if (layer->weights_T != nullptr) {
         destroyTensor(layer->weights_T);
     }
-    if (layer->grad_in_T != NULL) {
+    if (layer->grad_in_T != nullptr) {
         destroyTensor(layer->grad_in_T);
     }
-    if (layer->ones_like_input != NULL) {
+    if (layer->ones_like_input != nullptr) {
         destroyTensor(layer->ones_like_input);
     }
 
-    layer->forward = NULL;
-    layer->backward = NULL;
-    layer->last_input = NULL;
+    layer->forward = nullptr;
+    layer->backward = nullptr;
+    layer->last_input = nullptr;
 
     free(layer);
 }

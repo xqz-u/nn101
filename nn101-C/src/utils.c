@@ -3,8 +3,8 @@
 #include "utils.h"
 
 gsl_rng* initRNG(void) {
-    const gsl_rng_type* T = NULL;
-    gsl_rng* rng = NULL;
+    const gsl_rng_type* T = nullptr;
+    gsl_rng* rng = nullptr;
 
     gsl_rng_env_setup();
 

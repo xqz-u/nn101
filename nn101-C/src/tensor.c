@@ -9,13 +9,13 @@
 
 Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1) {
     Tensor* T = malloc(sizeof(Tensor));
-    if (T == NULL) {
-        return NULL;
+    if (T == nullptr) {
+        return nullptr;
     }
     T->data = calloc(batch_dim * dim0 * dim1, sizeof(double));
-    if (T->data == NULL) {
+    if (T->data == nullptr) {
         free(T);
-        return NULL;
+        return nullptr;
     };
     T->batch = batch_dim;
     T->n = dim0;
@@ -25,7 +25,7 @@ Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1) {
 }
 
 void destroyTensor(Tensor* T) {
-    if (T == NULL) {
+    if (T == nullptr) {
         return;
     }
     free(T->data);
@@ -33,7 +33,7 @@ void destroyTensor(Tensor* T) {
 }
 
 size_t indexTensor(Tensor* T, size_t k, size_t i, size_t j) {
-    assert(T != NULL && k < T->batch && i < T->n && j < T->features);
+    assert(T != nullptr && k < T->batch && i < T->n && j < T->features);
     return k * T->n * T->features + i * T->features + j;
 }
 
@@ -68,7 +68,7 @@ void printTensor(Tensor* T) {
 
 /* NOTE Do not call `destroyTensor(.)` on Tensors created by this function! */
 void getMatrixView(size_t k, Tensor* T, Tensor* M) {
-    if (T == NULL || M == NULL) {
+    if (T == nullptr || M == nullptr) {
         return;
     }
     assert(k < T->batch);
