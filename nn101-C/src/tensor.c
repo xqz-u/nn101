@@ -20,6 +20,7 @@ Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1) {
     T->batch = batch_dim;
     T->n = dim0;
     T->features = dim1;
+    T->flat_size = batch_dim * dim0 * dim1;
     return T;
 }
 
@@ -45,12 +46,13 @@ double tensorGet(Tensor* T, size_t k, size_t i, size_t j) {
 /* } */
 
 void printMatrix(Tensor* M) {
+    printf("Shape: (%lu, %lu, %lu)\n", M->batch, M->n, M->features);
     for (size_t i = 0; i < M->n; i++) {
-        printf("|%.2f", matrixGet(M, i, 0));
+        printf("| %.2f", matrixGet(M, i, 0));
         for (size_t j = 1; j < M->features; j++) {
             printf(", %.2f", matrixGet(M, i, j));
         }
-        printf("|\n");
+        printf(" |\n");
     }
 }
 
@@ -77,6 +79,18 @@ void getMatrixView(size_t k, Tensor* T, Tensor* M) {
     M->batch = 1;
     M->n = T->n;
     M->features = T->features;
+}
+
+Tensor* tensorLike(Tensor* T) {
+    return createTensor(T->batch, T->n, T->features);
+}
+
+Tensor* onesTensor(size_t batch, size_t n, size_t features) {
+    Tensor* T = createTensor(batch, n, features);
+    for (size_t i = 0; i < T->flat_size; i++) {
+        T->data[i] = 1.f;
+    }
+    return T;
 }
 
 /* ------------------ VECTOR ------------------ */
@@ -106,6 +120,10 @@ void addTensorAndVector(Tensor* X, Tensor* b) {
     }
 }
 
+Tensor* onesVector(size_t size) {
+    return onesTensor(1, 1, size);
+}
+
 /* ------------------ MATRIX ------------------ */
 
 Tensor* createMatrix(size_t rows, size_t cols) {
@@ -113,11 +131,7 @@ Tensor* createMatrix(size_t rows, size_t cols) {
 }
 
 Tensor* onesMatrix(size_t rows, size_t cols) {
-    Tensor* M = createMatrix(rows, cols);
-    for (size_t i = 0; i < rows * cols; i++) {
-        M->data[i] = 1.f;
-    }
-    return M;
+    return onesTensor(1, rows, cols);
 }
 
 size_t indexMatrix(Tensor* M, size_t i, size_t j) {

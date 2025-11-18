@@ -1,19 +1,54 @@
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "linear.h"
+#include "nn_math.h"
+
+void initLinearLayer(Linear* layer, gsl_rng* rng) {
+    kaimingUniform(layer->weights, rng);
+    kaimingUniform(layer->bias, rng);
+}
+
+void buildComputationGraphLinear(Linear* layer, Tensor* example_input) {
+    assert(example_input->batch == 1);
+
+    assert(layer->grad_in_T == NULL);
+    layer->grad_in_T = tensorLike(example_input);
+    assert(layer->grad_in_T != NULL);
+
+    assert(layer->ones_like_input == NULL);
+    layer->ones_like_input = onesMatrix(1, example_input->n);
+    assert(layer->ones_like_input != NULL);
+}
+
+void setupLinear(Linear* layer, Tensor* example_input, gsl_rng* rng) {
+    initLinearLayer(layer, rng);
+    buildComputationGraphLinear(layer, example_input);
+}
 
 void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
-    transpose(layer->weights, layer->weights_T);
+    assert(layer->last_input == NULL);
 
+    transpose(layer->weights, layer->weights_T);
     batchedMatMul(X, layer->weights_T, Y);
     addTensorAndVector(Y, layer->bias);
 
     layer->last_input = X;
 }
 
-void backwardLinear(Linear* layer, Tensor* grad_in, Tensor* inputs_grad) {}
+void backwardLinear(Linear* layer, Tensor* grad_in, Tensor* inputs_grad) {
+    assert(layer->last_input != NULL);
+
+    transpose(grad_in, layer->grad_in_T);
+    matMul(layer->grad_in_T, layer->last_input, layer->weights_grad);
+    matMul(layer->ones_like_input, grad_in, layer->bias_grad);
+
+    matMul(grad_in, layer->weights, inputs_grad);
+
+    layer->last_input = NULL;
+}
 
 Linear* createLinearLayer(size_t in_features, size_t out_features) {
     Linear* layer = malloc(sizeof(Linear));
@@ -26,7 +61,7 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
         free(layer);
         return NULL;
     }
-    layer->bias_grad = createVector(out_features);
+    layer->bias_grad = tensorLike(layer->bias);
     if (layer->bias_grad == NULL) {
         destroyTensor(layer->bias);
         free(layer);
@@ -41,7 +76,7 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
         return NULL;
     }
 
-    layer->weights_grad = createMatrix(out_features, in_features);
+    layer->weights_grad = tensorLike(layer->weights);
     if (layer->weights_grad == NULL) {
         destroyTensor(layer->weights);
         destroyTensor(layer->bias);
@@ -60,11 +95,15 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
         return NULL;
     }
 
+    layer->forward = &forwardLinear;
+    layer->backward = &backwardLinear;
+    layer->setup = &setupLinear;
+
     layer->in_features = in_features;
     layer->out_features = out_features;
     layer->last_input = NULL;
-    layer->forward = &forwardLinear;
-    layer->backward = &backwardLinear;
+    layer->grad_in_T = NULL;
+    layer->ones_like_input = NULL;
 
     return layer;
 }
@@ -78,10 +117,16 @@ void destroyLinearLayer(Linear* layer) {
     destroyTensor(layer->weights);
     destroyTensor(layer->weights_T);
     destroyTensor(layer->weights_grad);
-    layer->last_input = NULL;
+    if (layer->grad_in_T != NULL) {
+        destroyTensor(layer->grad_in_T);
+    }
+    if (layer->ones_like_input != NULL) {
+        destroyTensor(layer->ones_like_input);
+    }
+
     layer->forward = NULL;
     layer->backward = NULL;
+    layer->last_input = NULL;
+
     free(layer);
 }
-
-void initLinearLayer(Linear* layer) {}

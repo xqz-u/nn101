@@ -9,6 +9,7 @@ struct Tensor {
     size_t batch;
     size_t n;
     size_t features;
+    size_t flat_size;
 };
 
 Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1);
@@ -19,8 +20,10 @@ double tensorGet(Tensor* T, size_t k, size_t i, size_t j);
 void printMatrix(Tensor* M);
 void printTensor(Tensor* T);
 void getMatrixView(size_t k, Tensor* T, Tensor* M);
+Tensor* tensorLike(Tensor* T);
 
 Tensor* createVector(size_t size);
+Tensor* onesVector(size_t size);
 double dotProduct(Tensor* a, Tensor* b);
 void addTensorAndVector(Tensor* X, Tensor* b);
 

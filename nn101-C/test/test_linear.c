@@ -2,8 +2,13 @@
 
 #include "unity.h"
 
+#include <gsl/gsl_rng.h>
+#include <unistd.h>
+
 #include "linear.h"
+#include "nn_math.h"
 #include "tensor.h"
+#include "utils.h"
 
 #define SAMPLES 4
 #define IN_COUNT 3
@@ -11,6 +16,8 @@
 #define OUT_FEATURES 2
 #define INPUT_FLAT_SIZE SAMPLES * IN_COUNT * IN_FEATURES
 #define OUTPUT_FLAT_SIZE SAMPLES * IN_COUNT * OUT_FEATURES
+
+static const gsl_rng* rng = NULL;
 
 static const double input_tensor_array[INPUT_FLAT_SIZE] = {3, 5, 5, 3, 2,
                                                            //
@@ -36,9 +43,14 @@ static const double input_tensor_array[INPUT_FLAT_SIZE] = {3, 5, 5, 3, 2,
                                                            //
                                                            1, 4, 7, 9, 2};
 
-void setUp(void) {}
+void setUp(void) {
+    rng = initRNG();
+}
 
-void tearDown(void) {}
+void tearDown(void) {
+    gsl_rng_free(rng);
+    sleep(1);
+}
 
 void test_linearForward(void) {
     double expected[OUTPUT_FLAT_SIZE] = {18, 36,
@@ -108,5 +120,37 @@ void test_linearForward(void) {
     destroyTensor(Y);
     destroyLinearLayer(layer);
 }
+
+/* void test_linearInit(void) { */
+/*     Linear* layer = createLinearLayer(6, 3); */
+
+/*     Tensor* input = createTensor(1, 4, 6); */
+/*     for (size_t i = 0; i < input->flat_size; i++) { */
+/*         input[i] = (double)i + 1; */
+/*     } */
+/*     Tensor* output = createTensor(1, 4, 3); */
+
+/*     layer->setup(layer, input, rng); */
+/*     layer->forward(layer, input, output); */
+
+/*     printTensor(output); */
+
+/*     destroyTensor(input); */
+/*     destroyTensor(output); */
+/*     destroyLinearLayer(layer); */
+/* } */
+
+/* void test_linearBackward(void) { */
+/*     Linear* layer = createLinearLayer(6, 3); */
+
+/*     Tensor* input = createTensor(1, 4, 6); */
+/*     for (size_t i = 0; i < input->flat_size; i++) { */
+/*         input[i] = (double)i + 1; */
+/*     } */
+/*     Tensor* output = createTensor(1, 4, 3); */
+
+/*     layer->setup(layer, input, rng); */
+/*     layer->forward(layer, input, output); */
+/* } */
 
 #endif  // TEST
