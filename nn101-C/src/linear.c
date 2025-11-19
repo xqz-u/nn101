@@ -12,10 +12,9 @@ void initLinearLayer(Linear* layer, gsl_rng* rng) {
 }
 
 void buildComputationGraphLinear(Linear* layer, Tensor* example_input) {
-    assert(example_input->batch == 1);
-
     assert(layer->grad_in_T == nullptr);
-    layer->grad_in_T = tensorLike(example_input);
+    layer->grad_in_T = createTensor(example_input->batch, layer->out_features,
+                                    example_input->n);
     assert(layer->grad_in_T != nullptr);
 
     assert(layer->ones_like_input == nullptr);
@@ -61,7 +60,7 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
         destroyLinearLayer(layer);
         return nullptr;
     }
-    layer->bias_grad = tensorLike(layer->bias);
+    layer->bias_grad = zerosLike(layer->bias);
     if (layer->bias_grad == nullptr) {
         destroyLinearLayer(layer);
         return nullptr;
@@ -73,7 +72,7 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
         return nullptr;
     }
 
-    layer->weights_grad = tensorLike(layer->weights);
+    layer->weights_grad = zerosLike(layer->weights);
     if (layer->weights_grad == nullptr) {
         destroyLinearLayer(layer);
         return nullptr;
@@ -124,10 +123,6 @@ void destroyLinearLayer(Linear* layer) {
     if (layer->ones_like_input != nullptr) {
         destroyTensor(layer->ones_like_input);
     }
-
-    layer->forward = nullptr;
-    layer->backward = nullptr;
-    layer->last_input = nullptr;
 
     free(layer);
 }

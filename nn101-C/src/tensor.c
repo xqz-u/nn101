@@ -7,6 +7,10 @@
 
 /* ------------------ TENSOR ------------------ */
 
+void printTensorShape(Tensor* T) {
+    printf("Shape: (%lu, %lu, %lu)\n", T->batch, T->n, T->features);
+}
+
 Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1) {
     Tensor* T = malloc(sizeof(Tensor));
     if (T == nullptr) {
@@ -21,6 +25,8 @@ Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1) {
     T->n = dim0;
     T->features = dim1;
     T->flat_size = batch_dim * dim0 * dim1;
+    T->owns_data = true;
+    T->printShape = &printTensorShape;
     return T;
 }
 
@@ -28,7 +34,9 @@ void destroyTensor(Tensor* T) {
     if (T == nullptr) {
         return;
     }
-    free(T->data);
+    if (T->owns_data) {
+        free(T->data);
+    }
     free(T);
 }
 
@@ -41,12 +49,10 @@ double tensorGet(Tensor* T, size_t k, size_t i, size_t j) {
     return T->data[indexTensor(T, k, i, j)];
 }
 
-/* void tensorSet(Tensor* T, size_t k, size_t i, size_t j, double value) { */
-/*     T->data[indexTensor(T, k, i, j)] = value; */
-/* } */
-
-void printMatrix(Tensor* M) {
-    printf("Shape: (%lu, %lu, %lu)\n", M->batch, M->n, M->features);
+void printMatrixInternal(Tensor* M, bool shouldPrintShape) {
+    if (shouldPrintShape) {
+        printTensorShape(M);
+    }
     for (size_t i = 0; i < M->n; i++) {
         printf("[");
         for (size_t j = 0; j < M->features; j++) {
@@ -56,18 +62,22 @@ void printMatrix(Tensor* M) {
     }
 }
 
+void printMatrix(Tensor* M) {
+    printMatrixInternal(M, true);
+}
+
 void printTensor(Tensor* T) {
     Tensor Kth = {};
 
+    printTensorShape(T);
     for (size_t k = 0; k < T->batch; k++) {
-        getMatrixView(k, T, &Kth);
-        printMatrix(&Kth);
+        getMatrixAtIndex(k, T, &Kth);
+        printMatrixInternal(&Kth, false);
         printf("\n");
     }
 }
 
-/* NOTE Do not call `destroyTensor(.)` on Tensors created by this function! */
-void getMatrixView(size_t k, Tensor* T, Tensor* M) {
+void getMatrixAtIndex(size_t k, Tensor* T, Tensor* M) {
     if (T == nullptr || M == nullptr) {
         return;
     }
@@ -79,10 +89,7 @@ void getMatrixView(size_t k, Tensor* T, Tensor* M) {
     M->batch = 1;
     M->n = T->n;
     M->features = T->features;
-}
-
-Tensor* tensorLike(Tensor* T) {
-    return createTensor(T->batch, T->n, T->features);
+    M->owns_data = false;
 }
 
 Tensor* onesTensor(size_t batch, size_t n, size_t features) {
@@ -91,6 +98,14 @@ Tensor* onesTensor(size_t batch, size_t n, size_t features) {
         T->data[i] = 1.f;
     }
     return T;
+}
+
+Tensor* zerosLike(Tensor* T) {
+    return createTensor(T->batch, T->n, T->features);
+}
+
+Tensor* onesLike(Tensor* T) {
+    return onesTensor(T->batch, T->n, T->features);
 }
 
 /* ------------------ VECTOR ------------------ */
@@ -187,13 +202,13 @@ void matMul(Tensor* A, Tensor* B, Tensor* C) {
 
 void batchedMatMul(Tensor* X, Tensor* W, Tensor* Y) {
     assert(W->batch == 1);
-    /* Modern C, Takeaway 5.5 #1: All variables should be initialized. */
+    /* Modern C takeaway 5.5 #1: All variables should be initialized. */
     Tensor kth_input = {};
     Tensor kth_output = {};
 
     for (size_t k = 0; k < X->batch; k++) {
-        getMatrixView(k, X, &kth_input);
-        getMatrixView(k, Y, &kth_output);
+        getMatrixAtIndex(k, X, &kth_input);
+        getMatrixAtIndex(k, Y, &kth_output);
 
         matMul(&kth_input, W, &kth_output);
     }
