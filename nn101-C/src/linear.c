@@ -18,7 +18,9 @@ void buildComputationGraphLinear(Linear* layer, Tensor* example_input) {
     assert(layer->grad_in_T != nullptr);
 
     assert(layer->ones_like_input == nullptr);
-    layer->ones_like_input = onesMatrix(1, example_input->n);
+    Tensor example_input_view = {};
+    flattenFirstDims(example_input, &example_input_view);
+    layer->ones_like_input = onesVector(example_input_view.n);
     assert(layer->ones_like_input != nullptr);
 }
 
@@ -27,11 +29,14 @@ void setupLinear(Linear* layer, Tensor* example_input, gsl_rng* rng) {
     buildComputationGraphLinear(layer, example_input);
 }
 
+/* Operates like pytorch: if the input `X` has more than 2 dimensions, only the
+ * last is preserved while the others are coalesced into a single one to force a
+ * 2D matrix. */
 void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
     assert(layer->last_input == nullptr);
 
     transpose(layer->weights, layer->weights_T);
-    batchedMatMul(X, layer->weights_T, Y);
+    batchMatMul(X, layer->weights_T, Y);
     addTensorAndVector(Y, layer->bias);
 
     layer->last_input = X;
@@ -40,11 +45,28 @@ void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
 void backwardLinear(Linear* layer, Tensor* grad_in, Tensor* inputs_grad) {
     assert(layer->last_input != nullptr);
 
-    transpose(grad_in, layer->grad_in_T);
-    matMul(layer->grad_in_T, layer->last_input, layer->weights_grad);
-    matMul(layer->ones_like_input, grad_in, layer->bias_grad);
+    /* Rank 2 is forced upon gradients & inputs. Also check the expected shape
+     * of the gradient passed in via chain rule. */
+    Tensor grad_in_view = {};
+    flattenFirstDims(grad_in, &grad_in_view);
+    assert(grad_in_view.features == layer->out_features);
 
-    matMul(grad_in, layer->weights, inputs_grad);
+    Tensor grad_in_T_view = {};
+    flattenFirstDims(layer->grad_in_T, &grad_in_T_view);
+    /* After downcasting to rank 2, we can then take the transpose with the
+     * right dimensionality obtained from the cast. */
+    grad_in_T_view.n = grad_in_view.features;
+    grad_in_T_view.features = grad_in_view.n;
+
+    transpose(&grad_in_view, &grad_in_T_view);
+
+    Tensor last_input_view = {};
+    flattenFirstDims(layer->last_input, &last_input_view);
+
+    batchMatMul(&grad_in_T_view, &last_input_view, layer->weights_grad);
+    batchMatMul(layer->ones_like_input, &grad_in_view, layer->bias_grad);
+
+    batchMatMul(grad_in, layer->weights, inputs_grad);
 
     layer->last_input = nullptr;
 }

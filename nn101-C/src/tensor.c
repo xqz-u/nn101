@@ -49,6 +49,50 @@ double tensorGet(Tensor* T, size_t k, size_t i, size_t j) {
     return T->data[indexTensor(T, k, i, j)];
 }
 
+void getMatrixAtIndex(size_t k, Tensor* T, Tensor* M) {
+    if (T == nullptr || M == nullptr) {
+        return;
+    }
+    assert(k < T->batch);
+
+    /* point to the beginning of the k-th data block running from */
+    /* [k * T->n * T->features, k * T->n * T->features + T->n * T->features] */
+    M->batch = 1;
+    M->n = T->n;
+    M->features = T->features;
+    M->data = &T->data[k * T->n * T->features];
+    M->owns_data = false;
+    M->printShape = &printTensorShape;
+}
+
+void flattenFirstDims(Tensor* T, Tensor* T_view) {
+    if (T == nullptr || T_view == nullptr) {
+        return;
+    }
+    T_view->batch = 1;
+    T_view->n = T->batch * T->n;
+    T_view->features = T->features;
+    T_view->data = T->data;
+    T_view->owns_data = false;
+    T_view->printShape = &printTensorShape;
+}
+
+Tensor* onesTensor(size_t batch, size_t n, size_t features) {
+    Tensor* T = createTensor(batch, n, features);
+    for (size_t i = 0; i < T->flat_size; i++) {
+        T->data[i] = 1.f;
+    }
+    return T;
+}
+
+Tensor* zerosLike(Tensor* T) {
+    return createTensor(T->batch, T->n, T->features);
+}
+
+Tensor* onesLike(Tensor* T) {
+    return onesTensor(T->batch, T->n, T->features);
+}
+
 void printMatrixInternal(Tensor* M, bool shouldPrintShape) {
     if (shouldPrintShape) {
         printTensorShape(M);
@@ -75,37 +119,6 @@ void printTensor(Tensor* T) {
         printMatrixInternal(&Kth, false);
         printf("\n");
     }
-}
-
-void getMatrixAtIndex(size_t k, Tensor* T, Tensor* M) {
-    if (T == nullptr || M == nullptr) {
-        return;
-    }
-    assert(k < T->batch);
-
-    /* point to the beginning of the k-th data block, running from: */
-    /* [k * T->n * T->features, k * T->n * T->features + T->n * T->features] */
-    M->data = &T->data[k * T->n * T->features];
-    M->batch = 1;
-    M->n = T->n;
-    M->features = T->features;
-    M->owns_data = false;
-}
-
-Tensor* onesTensor(size_t batch, size_t n, size_t features) {
-    Tensor* T = createTensor(batch, n, features);
-    for (size_t i = 0; i < T->flat_size; i++) {
-        T->data[i] = 1.f;
-    }
-    return T;
-}
-
-Tensor* zerosLike(Tensor* T) {
-    return createTensor(T->batch, T->n, T->features);
-}
-
-Tensor* onesLike(Tensor* T) {
-    return onesTensor(T->batch, T->n, T->features);
 }
 
 /* ------------------ VECTOR ------------------ */
@@ -200,16 +213,21 @@ void matMul(Tensor* A, Tensor* B, Tensor* C) {
     }
 }
 
-void batchedMatMul(Tensor* X, Tensor* W, Tensor* Y) {
+void batchMatMul(Tensor* X, Tensor* W, Tensor* Y) {
     assert(W->batch == 1);
+
     /* Modern C takeaway 5.5 #1: All variables should be initialized. */
-    Tensor kth_input = {};
-    Tensor kth_output = {};
+    Tensor X_view = {};
+    Tensor Y_view = {};
 
-    for (size_t k = 0; k < X->batch; k++) {
-        getMatrixAtIndex(k, X, &kth_input);
-        getMatrixAtIndex(k, Y, &kth_output);
+    /* These tensor views are created only to 'fool' matMul, the result of
+     * multiplication is the same, just the shapes differ:
+     * (B, N, F) @ (F, C) == (B * N, F) @ (F, C). Using Y->data as underlying
+     * storage for Y_view, the output still receives the correct expanded shape.
+     * Generally speaking, every dimension except the last one is treated as as
+     * n in the formula (n, m) x (m, k) -> (n, k). */
+    flattenFirstDims(X, &X_view);
+    flattenFirstDims(Y, &Y_view);
 
-        matMul(&kth_input, W, &kth_output);
-    }
+    matMul(&X_view, W, &Y_view);
 }

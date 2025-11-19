@@ -27,7 +27,8 @@ size_t indexTensor(Tensor* T, size_t k, size_t i, size_t j);
 double tensorGet(Tensor* T, size_t k, size_t i, size_t j);
 void printMatrix(Tensor* M);
 void printTensor(Tensor* T);
-void getMatrixAtIndex(size_t k, Tensor* T, Tensor* M);
+/* void getMatrixAtIndex(size_t k, Tensor* T, Tensor* M); */
+void flattenFirstDims(Tensor* T, Tensor* T_view);
 Tensor* zerosLike(Tensor* T);
 Tensor* onesLike(Tensor* T);
 
@@ -45,6 +46,6 @@ void copyMatrixRow(size_t rowIdx, Tensor* M, double c[]);
 void copyMatrixCol(size_t colIdx, Tensor* M, double c[]);
 void transpose(Tensor* M, Tensor* Mt);
 void matMul(Tensor* A, Tensor* B, Tensor* C);
-void batchedMatMul(Tensor* X, Tensor* W, Tensor* Y);
+void batchMatMul(Tensor* X, Tensor* W, Tensor* Y);
 
 #endif  // TENSOR_H

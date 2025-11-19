@@ -87,12 +87,8 @@ void testDotProduct(void) {
 
 void test_matrixTranspose(void) {
     Tensor* M = createMatrix(SAMPLES, IN_FEATURES);
-
-    for (size_t i = 0; i < SAMPLES; i++) {
-        for (size_t j = 0; j < IN_FEATURES; j++) {
-            size_t idx = indexMatrix(M, i, j);
-            M->data[idx] = (double)(idx + 1);
-        }
+    for (size_t i = 0; i < M->flat_size; i++) {
+        M->data[i] = i + 1.f;
     }
 
     Tensor* Mt = createMatrix(M->features, M->n);
@@ -186,7 +182,7 @@ counter, */
  * This should help inspecting the utility of the Tensor / MatrixView API
  * design.
  */
-void test_batchedMatrixProduct(void) {
+void test_batchMatrixProduct(void) {
     double expected[OUTPUT_FLAT_SIZE] = {18, 36,
                                          //
                                          31, 62,
@@ -220,7 +216,7 @@ void test_batchedMatrixProduct(void) {
 
     Tensor* Y = createTensor(SAMPLES, IN_COUNT, OUT_FEATURES);
 
-    batchedMatMul(X, ones, Y);
+    batchMatMul(X, ones, Y);
     /* printTensor(Y); */
 
     for (size_t i = 0; i < OUTPUT_FLAT_SIZE; i++) {
