@@ -2,13 +2,15 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "tensor.h"
 
 /* ------------------ TENSOR ------------------ */
 
 void printTensorShape(Tensor* T) {
-    printf("Shape: (%lu, %lu, %lu)\n", T->batch, T->n, T->features);
+    printf("Shape: (%lu, %lu, %lu) size %lu\n", T->batch, T->n, T->features,
+           T->flat_size);
 }
 
 Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1) {
@@ -77,11 +79,20 @@ void flattenFirstDims(Tensor* T, Tensor* T_view) {
     T_view->printShape = &printTensorShape;
 }
 
+void tensorFill(Tensor* T, double value) {
+    assert(T != nullptr);
+    if (value == 0.0) {
+        memset(T->data, 0, T->flat_size * sizeof(double));
+        return;
+    }
+    for (size_t i = 0; i < T->flat_size; i++) {
+        T->data[i] = value;
+    }
+}
+
 Tensor* onesTensor(size_t batch, size_t n, size_t features) {
     Tensor* T = createTensor(batch, n, features);
-    for (size_t i = 0; i < T->flat_size; i++) {
-        T->data[i] = 1.f;
-    }
+    tensorFill(T, 1);
     return T;
 }
 
@@ -100,7 +111,7 @@ void printMatrixInternal(Tensor* M, bool shouldPrintShape) {
     for (size_t i = 0; i < M->n; i++) {
         printf("[");
         for (size_t j = 0; j < M->features; j++) {
-            printf(" %10.3f", matrixGet(M, i, j));
+            printf(" %10.2f", matrixGet(M, i, j));
         }
         printf(" ]\n");
     }
@@ -230,4 +241,33 @@ void batchMatMul(Tensor* X, Tensor* W, Tensor* Y) {
     flattenFirstDims(Y, &Y_view);
 
     matMul(&X_view, W, &Y_view);
+}
+
+/* NOTE Make sure that `v->data` is filed with 0s */
+void matrixSum(Tensor* M, size_t dim, Tensor* v) {
+    assert(M->batch == 1);
+    assert(dim == 0 || dim == 1);
+    assert(v != nullptr && v->batch == 1 && v->n == 1);
+
+    if (dim == 0) {
+        /* Sum over dimension 0 (row): sum each column */
+        assert(v->features == M->features);
+        for (size_t i = 0; i < M->n; i++) {
+            for (size_t j = 0; j < M->features; j++) {
+                v->data[j] += matrixGet(M, i, j);
+            }
+        }
+    }
+
+    if (dim == 1) {
+        /* Sum over dimension 1 (column): sum each row */
+        assert(v->features == M->n);
+        for (size_t i = 0; i < M->n; i++) {
+            double row_sum = 0;
+            for (size_t j = 0; j < M->features; j++) {
+                row_sum += matrixGet(M, i, j);
+            }
+            v->data[i] = row_sum;
+        }
+    }
 }

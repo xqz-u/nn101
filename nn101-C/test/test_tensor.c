@@ -227,4 +227,30 @@ void test_batchMatrixProduct(void) {
     destroyTensor(Y);
 }
 
+void test_matrixSum(void) {
+    size_t rows = 6;
+    size_t cols = 4;
+
+    Tensor* X = createMatrix(rows, cols);
+    for (size_t i = 0; i < X->flat_size; i++) {
+        X->data[i] = i + 1.f;
+    }
+
+    Tensor* rowWise = createVector(cols);
+    matrixSum(X, 0, rowWise);
+    double expected_rowWise[] = {66, 72, 78, 84};
+    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_rowWise, rowWise->data,
+                                   rowWise->flat_size);
+
+    Tensor* colWise = createVector(rows);
+    matrixSum(X, 1, colWise);
+    double expected_colWise[] = {10, 26, 42, 58, 74, 90};
+    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_colWise, colWise->data,
+                                   colWise->flat_size);
+
+    destroyTensor(colWise);
+    destroyTensor(rowWise);
+    destroyTensor(X);
+}
+
 #endif  // TEST

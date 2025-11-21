@@ -29,6 +29,7 @@ void printMatrix(Tensor* M);
 void printTensor(Tensor* T);
 /* void getMatrixAtIndex(size_t k, Tensor* T, Tensor* M); */
 void flattenFirstDims(Tensor* T, Tensor* T_view);
+void tensorFill(Tensor* T, double value);
 Tensor* zerosLike(Tensor* T);
 Tensor* onesLike(Tensor* T);
 
@@ -47,5 +48,6 @@ void copyMatrixCol(size_t colIdx, Tensor* M, double c[]);
 void transpose(Tensor* M, Tensor* Mt);
 void matMul(Tensor* A, Tensor* B, Tensor* C);
 void batchMatMul(Tensor* X, Tensor* W, Tensor* Y);
+void matrixSum(Tensor* M, size_t dim, Tensor* v);
 
 #endif  // TENSOR_H
