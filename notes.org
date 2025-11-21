@@ -63,3 +63,9 @@ Backward pass:
    Linear module has learnable parameters (weights + bias).
 3. Now that each layer has its own gradients, perform gradient descent on the
    learnable parameters.
+
+
+# LLM helped to
+
+1. Prevent gradient accumulation bug: I was not zeroing out the weights & bias
+   gradients before a backward pass in the Linear layer.
