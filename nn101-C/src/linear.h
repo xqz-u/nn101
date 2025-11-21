@@ -5,6 +5,7 @@
 
 #include "tensor.h"
 
+// TODO comment shape semantics
 typedef struct Linear Linear;
 struct Linear {
     size_t in_features;
@@ -18,12 +19,12 @@ struct Linear {
     Tensor* last_input;
 
     Tensor* weights_T;
-    Tensor* grad_in_T;
-    Tensor* ones_like_input;
+    Tensor* grad_out_T;
 
     void (*forward)(Linear* layer, Tensor* X, Tensor* Y);
-    void (*backward)(Linear* layer, Tensor* grad_in, Tensor* inputs_grad);
-    void (*setup)(Linear* layer, Tensor* example_input, gsl_rng* rng);
+    void (*backward)(Linear* layer, Tensor* grad_out, Tensor* grad_in);
+    void (*init)(Linear* layer, gsl_rng* rng);
+    void (*reset)(Linear* layer);
 };
 
 Linear* createLinearLayer(size_t in_features, size_t out_features);

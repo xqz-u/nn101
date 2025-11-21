@@ -11,22 +11,9 @@ void initLinearLayer(Linear* layer, gsl_rng* rng) {
     kaimingUniform(layer->bias, rng);
 }
 
-void buildComputationGraphLinear(Linear* layer, Tensor* example_input) {
-    assert(layer->grad_in_T == nullptr);
-    layer->grad_in_T = createTensor(example_input->batch, layer->out_features,
-                                    example_input->n);
-    assert(layer->grad_in_T != nullptr);
-
-    assert(layer->ones_like_input == nullptr);
-    Tensor example_input_view = {};
-    flattenFirstDims(example_input, &example_input_view);
-    layer->ones_like_input = onesVector(example_input_view.n);
-    assert(layer->ones_like_input != nullptr);
-}
-
-void setupLinear(Linear* layer, Tensor* example_input, gsl_rng* rng) {
-    initLinearLayer(layer, rng);
-    buildComputationGraphLinear(layer, example_input);
+void resetGradientsLinear(Linear* layer) {
+    tensorFill(layer->weights_grad, 0);
+    tensorFill(layer->bias_grad, 0);
 }
 
 /* Operates like pytorch: if the input `X` has more than 2 dimensions, only the
@@ -42,31 +29,59 @@ void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
     layer->last_input = X;
 }
 
-void backwardLinear(Linear* layer, Tensor* grad_in, Tensor* inputs_grad) {
+void ensureVariableTensorCapacity(Tensor** grad_out_T, Tensor* grad_out) {
+    bool isFirstTime = *grad_out_T == nullptr;
+    size_t current_capacity = isFirstTime ? 0 : (*grad_out_T)->flat_size;
+
+    /* Make sure to have enough memory if the batch size or sequence lengh
+     * (grad_out->n) changes. */
+    if (grad_out->flat_size > current_capacity) {
+        if (!isFirstTime) {
+            /* NOTE destroyTensor already checks that the pointer is not null
+             * before calling free, but that's a safety net, do not count on it
+             * as a logical feature. */
+            destroyTensor(*grad_out_T);
+        }
+        *grad_out_T =
+            createTensor(grad_out->batch, grad_out->features, grad_out->n);
+    }
+}
+
+/* @param `grad_out` The incoming gradient, taken wrt to the output of this
+ *                   layer.
+ * @param `grad_in` The gradient wrt to the input to this layer, to be passed to
+ *                  the previous layer. */
+void backwardLinear(Linear* layer, Tensor* grad_out, Tensor* grad_in) {
     assert(layer->last_input != nullptr);
+
+    layer->reset(layer);
 
     /* Rank 2 is forced upon gradients & inputs. Also check the expected shape
      * of the gradient passed in via chain rule. */
-    Tensor grad_in_view = {};
-    flattenFirstDims(grad_in, &grad_in_view);
-    assert(grad_in_view.features == layer->out_features);
+    Tensor grad_out_view = {};
+    flattenFirstDims(grad_out, &grad_out_view);
+    assert(grad_out_view.features == layer->out_features);
 
-    Tensor grad_in_T_view = {};
-    flattenFirstDims(layer->grad_in_T, &grad_in_T_view);
+    ensureVariableTensorCapacity(&layer->grad_out_T, grad_out);
+
+    Tensor grad_out_T_view = {};
+    flattenFirstDims(layer->grad_out_T, &grad_out_T_view);
     /* After downcasting to rank 2, we can then take the transpose with the
      * right dimensionality obtained from the cast. */
-    grad_in_T_view.n = grad_in_view.features;
-    grad_in_T_view.features = grad_in_view.n;
+    grad_out_T_view.n = grad_out_view.features;
+    grad_out_T_view.features = grad_out_view.n;
 
-    transpose(&grad_in_view, &grad_in_T_view);
+    transpose(&grad_out_view, &grad_out_T_view);
 
     Tensor last_input_view = {};
     flattenFirstDims(layer->last_input, &last_input_view);
 
-    batchMatMul(&grad_in_T_view, &last_input_view, layer->weights_grad);
-    batchMatMul(layer->ones_like_input, &grad_in_view, layer->bias_grad);
-
-    batchMatMul(grad_in, layer->weights, inputs_grad);
+    /* dL/dW = (dL/dY)^T * X */
+    matMul(&grad_out_T_view, &last_input_view, layer->weights_grad);
+    /* dL/db = 1s * dL/dY == sum(dL/dY, axis=0) */
+    matrixSum(&grad_out_view, 0, layer->bias_grad);
+    /* dL/dX = dL/dY * W */
+    batchMatMul(grad_out, layer->weights, grad_in);
 
     layer->last_input = nullptr;
 }
@@ -106,15 +121,15 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
         return nullptr;
     }
 
+    layer->init = &initLinearLayer;
     layer->forward = &forwardLinear;
     layer->backward = &backwardLinear;
-    layer->setup = &setupLinear;
+    layer->reset = &resetGradientsLinear;
 
     layer->in_features = in_features;
     layer->out_features = out_features;
     layer->last_input = nullptr;
-    layer->grad_in_T = nullptr;
-    layer->ones_like_input = nullptr;
+    layer->grad_out_T = nullptr;
 
     return layer;
 }
@@ -139,11 +154,8 @@ void destroyLinearLayer(Linear* layer) {
     if (layer->weights_T != nullptr) {
         destroyTensor(layer->weights_T);
     }
-    if (layer->grad_in_T != nullptr) {
-        destroyTensor(layer->grad_in_T);
-    }
-    if (layer->ones_like_input != nullptr) {
-        destroyTensor(layer->ones_like_input);
+    if (layer->grad_out_T != nullptr) {
+        destroyTensor(layer->grad_out_T);
     }
 
     free(layer);
