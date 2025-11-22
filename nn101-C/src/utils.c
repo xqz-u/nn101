@@ -17,6 +17,12 @@ gsl_rng* initRNG(void) {
     return rng;
 }
 
+void destroyRNG(gsl_rng* rng) {
+    if (rng != nullptr) {
+        gsl_rng_free(rng);
+    }
+}
+
 double computeMean(double* array, size_t size) {
     double sum = 0.f;
     for (size_t i = 0; i < size; i++) {
@@ -35,4 +41,11 @@ double computeStd(double* array, size_t size) {
     }
 
     return sqrt(diffs / size);
+}
+
+double relativeError(double a, double b) {
+    double diff = fabs(a - b);
+    double sum = fabs(a) + fabs(b);
+    /* Avoid division by zero */
+    return (sum > 1e-8) ? diff / sum : diff;
 }

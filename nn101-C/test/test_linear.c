@@ -2,8 +2,10 @@
 
 #include "unity.h"
 
+#include <gsl/gsl_rng.h>
 #include <unistd.h>
 
+#include "finite_diff.h"
 #include "linear.h"
 #include "nn_math.h"
 #include "tensor.h"
@@ -331,6 +333,54 @@ void test_differentBatchSizeDuringTraining(void) {
     linearLayerFullPassBiggerBatch(layer);
 
     destroyLinearLayer(layer);
+}
+
+void test_finiteDiffLinearGradients(void) {
+    gsl_rng* rng = initRNG();
+    size_t iters = 5;
+
+    for (size_t i = 0; i < iters; i++) {
+        /* Get some random shapes, excluding 0 */
+        size_t n = gsl_rng_uniform_int(rng, 20) + 1;
+        size_t m = gsl_rng_uniform_int(rng, 100) + 1;
+        size_t k = gsl_rng_uniform_int(rng, 10) + 1;
+
+        /* Test one iteration with 3D inputs too */
+        bool is_last_iter = i == iters - 1;
+        size_t batch = is_last_iter ? gsl_rng_uniform_int(rng, 10) + 1 : 1;
+
+        printf("Shape: (%lu, %lu, %lu) -> (%lu, %lu, %lu)\n", batch, n, m,
+               batch, n, k);
+
+        Linear* layer = createLinearLayer(m, k);
+        layer->init(layer, rng);
+
+        Tensor* X = createTensor(batch, n, m);
+        randUniformTensor(X, 1, rng);
+
+        /* Step size for finite differences */
+        double epsilon = 1e-5;
+        /* Max allowed relative error */
+        double tolerance = 1e-4;
+
+        double err_w = finiteDiffLinearWeights(layer, X, epsilon, rng);
+        printf("Max Relative Error (Weights): %e\n", err_w);
+        TEST_ASSERT_DOUBLE_WITHIN(tolerance, 0.0, err_w);
+
+        double err_b = finiteDiffLinearBias(layer, X, epsilon, rng);
+        printf("Max Relative Error (Bias):    %e\n", err_b);
+        TEST_ASSERT_DOUBLE_WITHIN(tolerance, 0.0, err_b);
+
+        double err_x = finiteDiffLinearInput(layer, X, epsilon, rng);
+        printf("Max Relative Error (Input):   %e\n", err_x);
+        TEST_ASSERT_DOUBLE_WITHIN(tolerance, 0.0, err_x);
+
+        destroyTensor(X);
+        destroyLinearLayer(layer);
+        printf("\n");
+    }
+
+    destroyRNG(rng);
 }
 
 #endif  // TEST

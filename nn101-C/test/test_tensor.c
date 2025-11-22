@@ -71,13 +71,10 @@ void testDotProduct(void) {
 
     Tensor* a = createVector(size);
     for (size_t i = 0; i < a->features; i++) {
-        a->data[i] = (double)(i + 1);
+        a->data[i] = i + 1.f;
     }
 
-    Tensor* b = createVector(size);
-    for (size_t i = 0; i < b->features; i++) {
-        b->data[i] = 1.f;
-    };
+    Tensor* b = onesVector(size);
 
     TEST_ASSERT_EQUAL_DOUBLE(15.f, dotProduct(a, b));
 

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <gsl/gsl_randist.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,9 @@
 /* ------------------ TENSOR ------------------ */
 
 void printTensorShape(Tensor* T) {
+    if (T == nullptr) {
+        return;
+    }
     printf("Shape: (%lu, %lu, %lu) size %lu\n", T->batch, T->n, T->features,
            T->flat_size);
 }
@@ -104,7 +108,16 @@ Tensor* onesLike(Tensor* T) {
     return onesTensor(T->batch, T->n, T->features);
 }
 
+void randUniformTensor(Tensor* T, double center, gsl_rng* rng) {
+    for (size_t i = 0; i < T->flat_size; i++) {
+        T->data[i] = gsl_ran_flat(rng, -center, center);
+    }
+}
+
 void printMatrixInternal(Tensor* M, bool shouldPrintShape) {
+    if (M == nullptr) {
+        return;
+    }
     if (shouldPrintShape) {
         printTensorShape(M);
     }
@@ -138,11 +151,13 @@ Tensor* createVector(size_t size) {
     return createTensor(1, 1, size);
 }
 
+/* NOTE This works with tensors/matrices too, as long as they have the same
+ * capacity. But it really is meaningful for vectors only. */
 double dotProduct(Tensor* a, Tensor* b) {
-    assert(a->batch == 1 && b->batch == 1 && a->n == 1 && b->n == 1 &&
-           a->features == b->features);
+    assert(a->flat_size == b->flat_size);
+
     double z = 0;
-    for (size_t i = 0; i < a->features; i++) {
+    for (size_t i = 0; i < a->flat_size; i++) {
         z += a->data[i] * b->data[i];
     }
     return z;

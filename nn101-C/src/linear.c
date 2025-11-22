@@ -20,7 +20,8 @@ void resetGradientsLinear(Linear* layer) {
  * last is preserved while the others are coalesced into a single one to force a
  * 2D matrix. */
 void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
-    assert(layer->last_input == nullptr);
+    /* Ensure not to accumulate output during repeated calls to forward. */
+    tensorFill(Y, 0.0);
 
     transpose(layer->weights, layer->weights_T);
     batchMatMul(X, layer->weights_T, Y);
@@ -30,21 +31,22 @@ void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
 }
 
 void ensureVariableTensorCapacity(Tensor** grad_out_T, Tensor* grad_out) {
-    bool isFirstTime = *grad_out_T == nullptr;
-    size_t current_capacity = isFirstTime ? 0 : (*grad_out_T)->flat_size;
+    bool is_first_time = *grad_out_T == nullptr;
+    size_t current_capacity = is_first_time ? 0 : (*grad_out_T)->flat_size;
 
     /* Make sure to have enough memory if the batch size or sequence lengh
      * (grad_out->n) changes. */
-    if (grad_out->flat_size > current_capacity) {
-        if (!isFirstTime) {
-            /* NOTE destroyTensor already checks that the pointer is not null
-             * before calling free, but that's a safety net, do not count on it
-             * as a logical feature. */
-            destroyTensor(*grad_out_T);
-        }
-        *grad_out_T =
-            createTensor(grad_out->batch, grad_out->features, grad_out->n);
+    if (grad_out->flat_size <= current_capacity) {
+        return;
     }
+    if (!is_first_time) {
+        /* NOTE destroyTensor already checks that the pointer is not null
+         * before calling free, but that's a safety net, do not count on it
+         * as a logical feature. */
+        destroyTensor(*grad_out_T);
+    }
+    *grad_out_T =
+        createTensor(grad_out->batch, grad_out->features, grad_out->n);
 }
 
 /* @param `grad_out` The incoming gradient, taken wrt to the output of this

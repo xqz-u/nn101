@@ -19,8 +19,8 @@ void test_gslReproducibility(void) {
 
     TEST_ASSERT_EQUAL_UINT(value1, value2);
 
-    gsl_rng_free(rng1);
-    gsl_rng_free(rng2);
+    destroyRNG(rng1);
+    destroyRNG(rng2);
 }
 
 void test_gslRandomness(void) {
@@ -48,7 +48,7 @@ void test_gslRandomness(void) {
         one_different,
         "Randomness test failed: subsequent calls produce same serie.");
 
-    gsl_rng_free(rng);
+    destroyRNG(rng);
 }
 
 #endif  // TEST

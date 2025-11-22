@@ -21,7 +21,5 @@ Fan computeFanInFanOut(Tensor* M) {
 void kaimingUniform(Tensor* T, gsl_rng* rng) {
     size_t fan_in = computeFanInFanOut(T).in;
     double bound = 1 / sqrt(fan_in);
-    for (size_t i = 0; i < T->flat_size; i++) {
-        T->data[i] = gsl_ran_flat(rng, -bound, bound);
-    }
+    randUniformTensor(T, bound, rng);
 }

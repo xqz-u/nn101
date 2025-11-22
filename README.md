@@ -3,6 +3,7 @@
 ## WIP
 
 - [ ] Numerical gradient tests (finite differences).
+  - [x] Linear layer
 - [x] Fix static graph computation being broken by inconsistent batch size during training.
 
 ## TODO
@@ -14,5 +15,5 @@
 - [ ] ~~Benchmark dynamic vs. static computation graph allocation (?).~~ Does
       not seem super interesting...
 - [ ] Document the whole process in some sort of essay.
-- [ ] Compile with -O2 flag / inspect assembly (-S) ?
+- [ ] Compile with -O2 / -O3 + inspect assembly (-S) ?
 - [ ] Logging ?

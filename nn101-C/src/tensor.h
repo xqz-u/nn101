@@ -1,6 +1,7 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 
+#include <gsl/gsl_rng.h>
 #include <stddef.h>
 
 typedef struct Tensor Tensor;
@@ -32,6 +33,7 @@ void flattenFirstDims(Tensor* T, Tensor* T_view);
 void tensorFill(Tensor* T, double value);
 Tensor* zerosLike(Tensor* T);
 Tensor* onesLike(Tensor* T);
+void randUniformTensor(Tensor* T, double center, gsl_rng* rng);
 
 Tensor* createVector(size_t size);
 Tensor* onesVector(size_t size);

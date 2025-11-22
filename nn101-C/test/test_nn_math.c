@@ -27,7 +27,7 @@ void test_kaimingWithinBounds(void) {
         TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(bound, M->data[i]);
     }
 
-    gsl_rng_free(rng);
+    destroyRNG(rng);
     destroyTensor(M);
 }
 
@@ -50,7 +50,7 @@ void test_kaimingMeanStd(void) {
     TEST_ASSERT_DOUBLE_WITHIN(1e-2, expected_mean, mean);
     TEST_ASSERT_DOUBLE_WITHIN(1e-2, expected_std, std);
 
-    gsl_rng_free(rng);
+    destroyRNG(rng);
     destroyTensor(M);
 }
 
