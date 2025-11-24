@@ -75,8 +75,8 @@ double finiteDiffLinearWeights(Linear* layer,
                                double eps,
                                gsl_rng* rng) {
     Tensor* grad_in = zerosLike(X);
-    double ret = finiteDiffLinearLayer(layer, grad_in, layer->weights_grad,
-                                       layer->weights, X, eps, rng);
+    double ret = finiteDiffLinearLayer(layer, grad_in, layer->weights.grad,
+                                       layer->weights.param, X, eps, rng);
     destroyTensor(grad_in);
     return ret;
 }
@@ -86,8 +86,8 @@ double finiteDiffLinearBias(Linear* layer,
                             double eps,
                             gsl_rng* rng) {
     Tensor* grad_in = zerosLike(X);
-    double ret = finiteDiffLinearLayer(layer, grad_in, layer->bias_grad,
-                                       layer->bias, X, eps, rng);
+    double ret = finiteDiffLinearLayer(layer, grad_in, layer->bias.grad,
+                                       layer->bias.param, X, eps, rng);
     destroyTensor(grad_in);
     return ret;
 }

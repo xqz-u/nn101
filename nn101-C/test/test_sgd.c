@@ -43,20 +43,19 @@ void test_SGD(void) {
     Tensor* w_grad = zerosLike(w);
     tensorFill(w_grad, 2.0);
 
-    Tensor* params[] = {w};
-    Tensor* grads[] = {w_grad};
+    LearnableParam params[] = {(LearnableParam){.param = w, .grad = w_grad}};
 
     /* Edge case with 0 learning rate */
-    SGD optim_zero = createSGD(0.0, params, grads, 1);
+    SGD optim_zero = createSGD(0.0, params, 1);
+
     optim_zero.step(optim_zero);
 
     for (size_t i = 0; i < w->flat_size; i++) {
         TEST_ASSERT_EQUAL_DOUBLE(1.0, w->data[i]);
     }
-    destroySGD(optim_zero);
 
     /* Standard Case */
-    SGD optim = createSGD(0.1, params, grads, 1);
+    SGD optim = createSGD(0.1, params, 1);
 
     TEST_ASSERT_EQUAL_PTR(w, optim.params[0].param);
     TEST_ASSERT_EQUAL_PTR(w_grad, optim.params[0].grad);
@@ -67,6 +66,7 @@ void test_SGD(void) {
         TEST_ASSERT_EQUAL_DOUBLE(0.8, w->data[i]);
     }
 
+    destroySGD(optim_zero);
     destroySGD(optim);
     destroyTensor(w);
     destroyTensor(w_grad);
@@ -89,29 +89,27 @@ void test_sgdTrainStep(void) {
 
     layer->backward(layer, dLdY, dLdX);
 
-    Tensor* params[] = {layer->weights, layer->bias};
-    Tensor* grads[] = {layer->weights_grad, layer->bias_grad};
-    size_t params_count = sizeof(params) / sizeof(params[0]);
+    LearnableParam params[] = {layer->weights, layer->bias};
 
     double lr = 0.01;
-    SGD optim = createSGD(lr, params, grads, params_count);
+    SGD optim = createSGD(lr, params, 2);
 
-    TEST_ASSERT_EQUAL_PTR(layer->weights, optim.params[0].param);
-    TEST_ASSERT_EQUAL_PTR(layer->weights_grad, optim.params[0].grad);
-    TEST_ASSERT_EQUAL_PTR(layer->bias, optim.params[1].param);
-    TEST_ASSERT_EQUAL_PTR(layer->bias_grad, optim.params[1].grad);
+    TEST_ASSERT_EQUAL_PTR(layer->weights.param, optim.params[0].param);
+    TEST_ASSERT_EQUAL_PTR(layer->weights.grad, optim.params[0].grad);
+    TEST_ASSERT_EQUAL_PTR(layer->bias.param, optim.params[1].param);
+    TEST_ASSERT_EQUAL_PTR(layer->bias.grad, optim.params[1].grad);
 
-    size_t weights_size = layer->weights->flat_size;
-    size_t bias_size = layer->bias->flat_size;
+    size_t weights_size = layer->weights.param->flat_size;
+    size_t bias_size = layer->bias.param->flat_size;
 
     double weights_copy[weights_size];
     for (size_t i = 0; i < weights_size; i++) {
-        weights_copy[i] = layer->weights->data[i];
+        weights_copy[i] = layer->weights.param->data[i];
     }
 
     double bias_copy[bias_size];
     for (size_t i = 0; i < bias_size; i++) {
-        bias_copy[i] = layer->bias->data[i];
+        bias_copy[i] = layer->bias.param->data[i];
     }
 
     optim.step(optim);
@@ -119,17 +117,17 @@ void test_sgdTrainStep(void) {
     double expected_new_weights[weights_size];
     for (size_t i = 0; i < weights_size; i++) {
         expected_new_weights[i] =
-            weights_copy[i] - lr * layer->weights_grad->data[i];
+            weights_copy[i] - lr * layer->weights.grad->data[i];
     }
 
-    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_new_weights, layer->weights->data,
-                                   weights_size);
+    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_new_weights,
+                                   layer->weights.param->data, weights_size);
 
     double expected_new_bias[bias_size];
     for (size_t i = 0; i < bias_size; i++) {
-        expected_new_bias[i] = bias_copy[i] - lr * layer->bias_grad->data[i];
+        expected_new_bias[i] = bias_copy[i] - lr * layer->bias.grad->data[i];
     }
-    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_new_bias, layer->bias->data,
+    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_new_bias, layer->bias.param->data,
                                    bias_size);
 
     destroyTensor(X);

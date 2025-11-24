@@ -9,22 +9,20 @@ void sgdStep(SGD optimizer) {
     }
 }
 
-SGD createSGD(double lr,
-              Tensor* learnable_params[],
-              Tensor* grads[],
-              size_t params_count) {
-    assert(learnable_params != nullptr && grads != nullptr);
+SGD createSGD(double lr, LearnableParam params[], size_t params_count) {
+    assert(params != nullptr);
 
-    SGD optimizer = {.lr = lr, .params_count = params_count};
-    optimizer.params = malloc(params_count * sizeof(LearnableParam));
-    if (optimizer.params == nullptr) {
+    SGD optimizer = {.lr = lr, .params = nullptr, .params_count = params_count};
+
+    LearnableParam* sgdParams = malloc(params_count * sizeof(LearnableParam));
+    if (sgdParams == nullptr) {
         return optimizer;
     }
-
     for (size_t i = 0; i < params_count; i++) {
-        optimizer.params[i] =
-            (LearnableParam){.param = learnable_params[i], .grad = grads[i]};
+        sgdParams[i] = params[i];
     }
+
+    optimizer.params = sgdParams;
     optimizer.step = &sgdStep;
     return optimizer;
 }

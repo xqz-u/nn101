@@ -1,14 +1,7 @@
 #ifndef SGD_H
 #define SGD_H
 
-#include "tensor.h"
-
-typedef struct LearnableParam LearnableParam;
-struct LearnableParam {
-    const char* name;
-    Tensor* param;
-    Tensor* grad;
-};
+#include "nn_types.h"
 
 typedef struct SGD SGD;
 struct SGD {
@@ -18,11 +11,7 @@ struct SGD {
 
     void (*step)(SGD optimizer);
 };
-
-SGD createSGD(double lr,
-              Tensor* learnable_params[],
-              Tensor* grads[],
-              size_t params_count);
+SGD createSGD(double lr, LearnableParam params[], size_t params_count);
 void destroySGD(SGD optimizer);
 
 #endif  // SGD_H
