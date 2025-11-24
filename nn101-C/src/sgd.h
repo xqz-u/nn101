@@ -10,7 +10,9 @@ struct SGD {
     LearnableParam* params;
 
     void (*step)(SGD optimizer);
+    void (*zeroGrads)(SGD optimizer);
 };
+
 SGD createSGD(double lr, LearnableParam params[], size_t params_count);
 void destroySGD(SGD optimizer);
 

@@ -2,6 +2,10 @@
 
 ## WIP
 
+- [ ] Categorical loss module (cross entropy).
+- [x] Regression test: check that a single linear layer is able to learn a
+      simple regression task.
+- [x] SGD.
 - [ ] Numerical gradient tests (finite differences).
   - [x] Linear layer
 - [x] Fix static graph computation being broken by inconsistent batch size during training.

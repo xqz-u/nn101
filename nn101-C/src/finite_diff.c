@@ -31,6 +31,7 @@ double finiteDiffLinearLayer(Linear* layer,
     Tensor* grad_out = zerosLike(Y);
     randUniformTensor(grad_out, 0.5, rng);
 
+    zeroGrads((LearnableParam[]){layer->weights, layer->bias}, 2);
     layer->backward(layer, grad_out, grad_in);
 
     double max_rel_err = 0.0;

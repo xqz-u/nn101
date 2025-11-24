@@ -23,7 +23,6 @@ struct Linear {
     void (*forward)(Linear* layer, Tensor* X, Tensor* Y);
     void (*backward)(Linear* layer, Tensor* grad_out, Tensor* grad_in);
     void (*init)(Linear* layer, gsl_rng* rng);
-    void (*reset)(Linear* layer);
 };
 
 Linear* createLinearLayer(size_t in_features, size_t out_features);

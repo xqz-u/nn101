@@ -7,6 +7,7 @@
 #include "finite_diff.h"
 #include "linear.h"
 #include "nn_math.h"
+#include "nn_types.h"
 #include "tensor.h"
 #include "utils.h"
 
@@ -75,6 +76,8 @@ static void linearLayerFullPass(Linear* layer,
                                 double expected_Y[],
                                 double expected_dLdW[],
                                 double expected_dLdX[]) {
+    zeroGrads((LearnableParam[]){layer->weights, layer->bias}, 2);
+
     layer->forward(layer, X, Y);
 
     TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_Y, Y->data, Y->flat_size);

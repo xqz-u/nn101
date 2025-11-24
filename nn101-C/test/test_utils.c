@@ -2,6 +2,7 @@
 
 #include "unity.h"
 
+#include "tensor.h"
 #include "utils.h"
 
 void setUp(void) {}

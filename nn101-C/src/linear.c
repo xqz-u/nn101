@@ -57,8 +57,6 @@ void ensureVariableTensorCapacity(Tensor** grad_out_T, Tensor* grad_out) {
 void backwardLinear(Linear* layer, Tensor* grad_out, Tensor* grad_in) {
     assert(layer->last_input != nullptr);
 
-    layer->reset(layer);
-
     /* Rank 2 is forced upon gradients & inputs. Also check the expected shape
      * of the gradient passed in via chain rule. */
     Tensor grad_out_view = {};
@@ -130,7 +128,6 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
     layer->init = &initLinearLayer;
     layer->forward = &forwardLinear;
     layer->backward = &backwardLinear;
-    layer->reset = &resetGradientsLinear;
 
     layer->in_features = in_features;
     layer->out_features = out_features;
