@@ -286,3 +286,10 @@ void matrixSum(Tensor* M, size_t dim, Tensor* v) {
         }
     }
 }
+
+void tensorAddScaled(Tensor* A, double scale, Tensor* B) {
+    assert(A->flat_size == B->flat_size);
+    for (size_t i = 0; i < A->flat_size; i++) {
+        A->data[i] += scale * B->data[i];
+    }
+}

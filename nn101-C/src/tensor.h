@@ -52,4 +52,6 @@ void matMul(Tensor* A, Tensor* B, Tensor* C);
 void batchMatMul(Tensor* X, Tensor* W, Tensor* Y);
 void matrixSum(Tensor* M, size_t dim, Tensor* v);
 
+void tensorAddScaled(Tensor* A, double scale, Tensor* B);
+
 #endif  // TENSOR_H
