@@ -2,7 +2,6 @@
 
 #include "unity.h"
 
-#include <gsl/gsl_rng.h>
 #include <unistd.h>
 
 #include "finite_diff.h"

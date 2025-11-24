@@ -2,8 +2,6 @@
 
 #include "unity.h"
 
-#include <gsl/gsl_rng.h>
-
 #include "utils.h"
 
 void setUp(void) {}

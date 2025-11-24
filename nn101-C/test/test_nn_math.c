@@ -2,7 +2,6 @@
 
 #include "unity.h"
 
-#include <gsl/gsl_rng.h>
 #include <math.h>
 
 #include "nn_math.h"

@@ -2,7 +2,6 @@
 
 #include "unity.h"
 
-#include <stddef.h>
 #include <unistd.h>
 
 #include "tensor.h"
