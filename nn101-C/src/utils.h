@@ -11,5 +11,6 @@ double computeMean(double* array, size_t size);
 double computeStd(double* array, size_t size);
 double relativeError(double a, double b);
 void zeroGrads(LearnableParam params[], size_t params_count);
+void printRealArray(double* a, size_t size);
 
 #endif  // UTILS_H

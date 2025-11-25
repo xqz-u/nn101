@@ -72,14 +72,8 @@ void test_linearRegression(void) {
 
     printf("%.5f\n", mean_err);
 
-    for (size_t i = 0; i < 10; i++) {
-        printf("%.2f ", Y->data[i]);
-    }
-    printf("\n");
-    for (size_t i = 0; i < 10; i++) {
-        printf("%.2f ", Y_pred->data[i]);
-    }
-    printf("\n");
+    printRealArray(Y->data, 10);
+    printRealArray(Y_pred->data, 10);
 
     destroySGD(optim);
     destroyLinearLayer(layer);

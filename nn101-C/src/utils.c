@@ -56,3 +56,14 @@ void zeroGrads(LearnableParam params[], size_t params_count) {
         tensorFill(params[i].grad, 0.0);
     }
 }
+
+void printRealArray(double* a, size_t size) {
+    if (a == nullptr) {
+        return;
+    }
+    printf("[%.2f", a[0]);
+    for (size_t i = 1; i < size; i++) {
+        printf(", %.2f", a[i]);
+    }
+    printf("]\n");
+}
