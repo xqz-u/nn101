@@ -24,7 +24,7 @@ void destroyRNG(gsl_rng* rng) {
     }
 }
 
-double computeMean(double* array, size_t size) {
+double computeMean(double array[], size_t size) {
     double sum = 0.f;
     for (size_t i = 0; i < size; i++) {
         sum += array[i];
@@ -32,7 +32,7 @@ double computeMean(double* array, size_t size) {
     return sum / size;
 }
 
-double computeStd(double* array, size_t size) {
+double computeStd(double array[], size_t size) {
     double avg = computeMean(array, size);
 
     double diffs = 0.f;
@@ -57,13 +57,42 @@ void zeroGrads(LearnableParam params[], size_t params_count) {
     }
 }
 
-void printRealArray(double* a, size_t size) {
+void printIntArray(size_t a[], size_t size) {
     if (a == nullptr) {
         return;
     }
-    printf("[%.2f", a[0]);
+    printf("[%lu", a[0]);
     for (size_t i = 1; i < size; i++) {
-        printf(", %.2f", a[i]);
+        printf(", %lu", a[i]);
     }
     printf("]\n");
+}
+
+void printRealArrayBase(double a[], size_t size, const char* fmt) {
+    if (a == nullptr) {
+        return;
+    }
+    printf("[");
+    for (size_t i = 0; i < size; i++) {
+        printf(fmt, a[i]);
+        if (i != size - 1) {
+            printf(", ");
+        }
+    }
+    printf("]\n");
+}
+
+void var_printRealArray(PrintArgs args) {
+    const char* final_fmt = args.fmt ? args.fmt : "%.2f";
+    return printRealArrayBase(args.array, args.size, final_fmt);
+}
+
+double max(double* a, size_t size) {
+    double max = a[0];
+    for (size_t i = 1; i < size; i++) {
+        if (a[i] > max) {
+            max = a[i];
+        }
+    }
+    return max;
 }
