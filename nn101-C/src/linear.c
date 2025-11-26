@@ -31,25 +31,6 @@ void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
     layer->last_input = X;
 }
 
-void ensureVariableTensorCapacity(Tensor** grad_out_T, Tensor* grad_out) {
-    bool is_first_time = *grad_out_T == nullptr;
-    size_t current_capacity = is_first_time ? 0 : (*grad_out_T)->flat_size;
-
-    /* Make sure to have enough memory if the batch size or sequence lengh
-     * (grad_out->n) changes. */
-    if (grad_out->flat_size <= current_capacity) {
-        return;
-    }
-    if (!is_first_time) {
-        /* NOTE destroyTensor already checks that the pointer is not null
-         * before calling free, but that's a safety net, do not count on it
-         * as a logical feature. */
-        destroyTensor(*grad_out_T);
-    }
-    *grad_out_T =
-        createTensor(grad_out->batch, grad_out->features, grad_out->n);
-}
-
 /* @param `grad_out` The incoming gradient, taken wrt to the output of this
  *                   layer.
  * @param `grad_in` The gradient wrt to the input to this layer, to be passed to
@@ -63,7 +44,7 @@ void backwardLinear(Linear* layer, Tensor* grad_out, Tensor* grad_in) {
     flattenFirstDims(grad_out, &grad_out_view);
     assert(grad_out_view.features == layer->out_features);
 
-    ensureVariableTensorCapacity(&layer->grad_out_T, grad_out);
+    ensureTensorCapacity(&layer->grad_out_T, grad_out);
 
     Tensor grad_out_T_view = {};
     flattenFirstDims(layer->grad_out_T, &grad_out_T_view);

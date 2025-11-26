@@ -46,6 +46,15 @@ void destroyTensor(Tensor* T) {
     free(T);
 }
 
+void destroyTensors(size_t n, ...) {
+    va_list args;
+    va_start(args, n);
+    for (size_t i = 0; i < n; i++) {
+        destroyTensor(va_arg(args, Tensor*));
+    }
+    va_end(args);
+}
+
 size_t indexTensor(Tensor* T, size_t k, size_t i, size_t j) {
     assert(T != nullptr && k < T->batch && i < T->n && j < T->features);
     return k * T->n * T->features + i * T->features + j;
@@ -63,14 +72,17 @@ void getMatrixAtIndex(size_t k, Tensor* T, Tensor* M) {
 
     /* point to the beginning of the k-th data block running from */
     /* [k * T->n * T->features, k * T->n * T->features + T->n * T->features] */
+    M->flat_size = T->n * T->features;
     M->batch = 1;
     M->n = T->n;
     M->features = T->features;
-    M->data = &T->data[k * T->n * T->features];
+    M->data = &T->data[k * M->flat_size];
     M->owns_data = false;
     M->printShape = &printTensorShape;
 }
 
+/* Creates a view treating `T` as (rows, cols) with cols = last dimension, rows
+ * = product of leading dimensions. */
 void flattenFirstDims(Tensor* T, Tensor* T_view) {
     if (T == nullptr || T_view == nullptr) {
         return;
@@ -79,6 +91,7 @@ void flattenFirstDims(Tensor* T, Tensor* T_view) {
     T_view->n = T->batch * T->n;
     T_view->features = T->features;
     T_view->data = T->data;
+    T_view->flat_size = T->flat_size;
     T_view->owns_data = false;
     T_view->printShape = &printTensorShape;
 }
@@ -292,4 +305,37 @@ void tensorAddScaled(Tensor* A, double scale, Tensor* B) {
     for (size_t i = 0; i < A->flat_size; i++) {
         A->data[i] += scale * B->data[i];
     }
+}
+
+void ensureTensorCapacity(Tensor** source, Tensor* reference) {
+    bool is_first_time = *source == nullptr;
+    size_t current_capacity = is_first_time ? 0 : (*source)->flat_size;
+    /* Make sure to have enough memory if the batch size or sequence lengh
+     * changes. */
+    if (reference->flat_size <= current_capacity) {
+        return;
+    }
+    if (!is_first_time) {
+        /* NOTE destroyTensor already checks that the pointer is not null
+         * before calling free, but that's a safety net, do not count on it
+         * as a logical feature. */
+        destroyTensor(*source);
+    }
+    *source = zerosLike(reference);
+    assert(*source != nullptr);
+}
+
+/* Treats the passed tensor as a vector */
+size_t argmax(Tensor* t) {
+    assert(t != nullptr);
+
+    size_t max_idx = 0;
+    double max_value = t->data[max_idx];
+    for (size_t i = 0; i < t->flat_size; i++) {
+        if (t->data[i] > max_value) {
+            max_value = t->data[i];
+            max_idx = i;
+        }
+    }
+    return max_idx;
 }

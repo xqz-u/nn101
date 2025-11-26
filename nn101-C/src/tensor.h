@@ -2,6 +2,7 @@
 #define TENSOR_H
 
 #include <gsl/gsl_rng.h>
+#include <stdarg.h>
 #include <stddef.h>
 
 typedef struct Tensor Tensor;
@@ -17,13 +18,9 @@ struct Tensor {
     void (*printShape)(Tensor* T);
 };
 
-typedef struct TensorView TensorView;
-struct TensorView {
-    Tensor* view;
-};
-
 Tensor* createTensor(size_t batch_dim, size_t dim0, size_t dim1);
 void destroyTensor(Tensor* T);
+void destroyTensors(size_t n, ...);
 size_t indexTensor(Tensor* T, size_t k, size_t i, size_t j);
 double tensorGet(Tensor* T, size_t k, size_t i, size_t j);
 void printMatrix(Tensor* M);
@@ -53,5 +50,7 @@ void batchMatMul(Tensor* X, Tensor* W, Tensor* Y);
 void matrixSum(Tensor* M, size_t dim, Tensor* v);
 
 void tensorAddScaled(Tensor* A, double scale, Tensor* B);
+void ensureTensorCapacity(Tensor** source, Tensor* reference);
+size_t argmax(Tensor* t);
 
 #endif  // TENSOR_H
