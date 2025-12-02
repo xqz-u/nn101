@@ -29,6 +29,7 @@ void printTensor(Tensor* T);
 void flattenFirstDims(Tensor* T, Tensor* T_view);
 void tensorFill(Tensor* T, double value);
 Tensor* zerosLike(Tensor* T);
+Tensor* onesTensor(size_t batch, size_t n, size_t features);
 Tensor* onesLike(Tensor* T);
 void randUniformTensor(Tensor* T, double center, gsl_rng* rng);
 

@@ -23,5 +23,9 @@ double relativeError(double a, double b);
 void zeroGrads(LearnableParam params[], size_t params_count);
 void printIntArray(size_t a[], size_t size);
 double max(double* a, size_t size);
+void simpleInference(size_t samples_count,
+                     size_t classes,
+                     Tensor* logits,
+                     size_t predictions[samples_count]);
 
 #endif  // UTILS_H

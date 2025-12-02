@@ -96,3 +96,13 @@ double max(double* a, size_t size) {
     }
     return max;
 }
+
+void simpleInference(size_t samples_count,
+                     size_t classes,
+                     Tensor* logits,
+                     size_t predictions[samples_count]) {
+    for (size_t i = 0; i < samples_count; i++) {
+        Tensor tmp = {.flat_size = classes, .data = &logits->data[i * classes]};
+        predictions[i] = argmax(&tmp);
+    }
+}

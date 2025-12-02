@@ -15,16 +15,6 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
-void simpleInference(size_t samples_count,
-                     size_t classes,
-                     Tensor* logits,
-                     size_t predictions[samples_count]) {
-    for (size_t i = 0; i < samples_count; i++) {
-        Tensor tmp = {.flat_size = classes, .data = &logits->data[i * classes]};
-        predictions[i] = argmax(&tmp);
-    }
-}
-
 void test_linearRegression(void) {
     gsl_rng* rng = initRNG();
 
@@ -56,7 +46,7 @@ void test_linearRegression(void) {
     Tensor* loss_grad = createTensor(X->batch, X->n, layer->out_features);
     Tensor* X_grad = zerosLike(X);
 
-    double mean_err = -1.0;
+    double prev_err = INFINITY;
 
     size_t epochs = 10;
     for (size_t i = 0; i < epochs; i++) {
@@ -67,10 +57,9 @@ void test_linearRegression(void) {
         mse.forward(Y_pred, Y, error);
 
         double new_err = computeMean(error->data, error->flat_size);
-        mean_err = new_err;
+        TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(prev_err, new_err);
 
-        /* Loss should be strictly decreasing in this example */
-        TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(mean_err, new_err);
+        prev_err = new_err;
 
         mse.backward(Y_pred, Y, loss_grad);
 
@@ -79,7 +68,7 @@ void test_linearRegression(void) {
         optim.step(optim);
     }
 
-    printf("Final error: %.5f\n", mean_err);
+    printf("Final error: %.5f\n", prev_err);
 
     printf("True train Y:\n");
     printRealArray(Y->data, 10);
@@ -133,7 +122,7 @@ void test_binaryClassification(void) {
     Tensor* loss = createVector(batch);
 
     size_t epochs = 5;
-    double mean_err = -1.0;
+    double prev_err = INFINITY;
     double errors_track[epochs];
     /* To perform inference on the training set */
     size_t decisions[batch];
@@ -146,24 +135,23 @@ void test_binaryClassification(void) {
         ceLoss.forward(&ceLoss, logits, labels, loss);
 
         double new_err = computeMean(loss->data, loss->flat_size);
-        mean_err = new_err;
+        TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(prev_err, new_err);
+
+        prev_err = new_err;
+        errors_track[i] = new_err;
 
         simpleInference(batch, classes, logits, decisions);
         printf("Predictions:\n");
         printIntArray(decisions, batch);
         printf("Accuracy: %.2f\n", accuracyScore(decisions, labels, batch));
 
-        /* Loss should be strictly decreasing in this example */
-        TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(mean_err, new_err);
-
         ceLoss.backward(&ceLoss, labels, loss_grad);
         layer->backward(layer, loss_grad, X_grad);
 
         optim.step(optim);
-        errors_track[i] = new_err;
     }
 
-    printf("Final error: %.5f, training errors:\n", mean_err);
+    printf("Final error: %.5f, training errors:\n", prev_err);
     printRealArray(errors_track, epochs, "%.5f");
 
     layer->forward(layer, X, logits);
