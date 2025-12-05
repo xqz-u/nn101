@@ -2,6 +2,8 @@
 
 ## WIP
 
+- [x] First working MLP implementation.
+  - [ ] Better design!
 - [x] Categorical loss module (cross entropy).
 - [x] Regression test: check that a single linear layer is able to learn a
       simple regression task.
@@ -12,6 +14,9 @@
 
 ## TODO
 
+- [ ] Explore the concept of handles https://stackoverflow.com/a/21501054 to
+      define structures in source files rather than headers - I'm working mostly
+      with struct pointers anyways.
 - [ ] Refactor the `Tensor` struct to be more general, using a `shape` field
       instead of 3 hard-coded `[batch, n, features]` dimensions.
 - [ ] Benchmark against implementation using strides.

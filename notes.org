@@ -69,3 +69,11 @@ Backward pass:
 
 1. Prevent gradient accumulation bug: I was not zeroing out the weights & bias
    gradients before a backward pass in the Linear layer.
+
+# C new discoveries
+
+1. Module semantics of unsigned values, which risked biting me in the ass when
+   looping in reverse order over the blocks in a MLP during a backward
+   pass. Coincidentally recently heard that from @antirez in his C course,
+   lesson 3.
+2. `calloc` can be used to [[https://stackoverflow.com/a/5857706][set pointers to NULL]] - in rough terms.

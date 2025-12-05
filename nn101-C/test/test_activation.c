@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "activation.h"
+#include "learnable_param.h"
 #include "linear.h"
 #include "loss.h"
 #include "nn_math.h"
@@ -95,9 +96,10 @@ void test_eluXOR(void) {
     ELU elu = createELUActivation(1.0);
 
     /* 3. Training components */
-    LearnableParam params[] = {fc1->weights, fc1->bias, fc2->weights,
-                               fc2->bias};
-    SGD optim = createSGD(0.1, params, 4);
+    LearnableParam* params[] = {fc1->weights, fc1->bias, fc2->weights,
+                                fc2->bias};
+    double lr = 1e-1;
+    SGD optim = createSGD(lr, params, 4);
 
     CrossEntropyLoss loss_fn = createCrossEntropyLoss(classes);
 
@@ -114,12 +116,12 @@ void test_eluXOR(void) {
     Tensor* d_X = zerosLike(X);
 
     /* 5. Training loop */
-    size_t epochs = 50;
+    size_t epochs = 275;
     double errors_track[epochs];
     double prev_err = INFINITY;
 
-    for (int i = 0; i < epochs; i++) {
-        optim.zeroGrads(optim);
+    for (size_t i = 0; i < epochs; i++) {
+        optim.zeroGrads(&optim);
 
         /* Forward */
         fc1->forward(fc1, X, h1);
@@ -137,11 +139,12 @@ void test_eluXOR(void) {
 
         /* Backprop */
         loss_fn.backward(&loss_fn, labels, d_logits);
+
         fc2->backward(fc2, d_logits, d_h1_act);
         elu.backward(&elu, h1_act, d_h1_act, d_h1);
         fc1->backward(fc1, d_h1, d_X);
 
-        optim.step(optim);
+        optim.step(&optim);
     }
 
     printf("Training errors:\n");
@@ -162,7 +165,7 @@ void test_eluXOR(void) {
 
     destroyLinearLayer(fc1);
     destroyLinearLayer(fc2);
-    destroySGD(optim);
+    destroySGD(&optim);
     destroyCrossEntropyLoss(&loss_fn);
     destroyTensors(9, X, h1, h1_act, logits, loss_val, d_logits, d_h1_act, d_h1,
                    d_X);

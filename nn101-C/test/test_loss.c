@@ -4,6 +4,7 @@
 
 #include <gsl/gsl_randist.h>
 
+#include "learnable_param.h"
 #include "linear.h"
 #include "loss.h"
 #include "nn_math.h"
@@ -36,7 +37,7 @@ void test_linearRegression(void) {
     Linear* layer = createLinearLayer(1, 1);
     layer->init(layer, rng);
 
-    LearnableParam params[] = {layer->weights, layer->bias};
+    LearnableParam* params[] = {layer->weights, layer->bias};
     SGD optim = createSGD(0.01, params, 2);
 
     Tensor* Y_pred = zerosLike(Y);
@@ -50,7 +51,7 @@ void test_linearRegression(void) {
 
     size_t epochs = 10;
     for (size_t i = 0; i < epochs; i++) {
-        optim.zeroGrads(optim);
+        optim.zeroGrads(&optim);
 
         layer->forward(layer, X, Y_pred);
 
@@ -65,7 +66,7 @@ void test_linearRegression(void) {
 
         layer->backward(layer, loss_grad, X_grad);
 
-        optim.step(optim);
+        optim.step(&optim);
     }
 
     printf("Final error: %.5f\n", prev_err);
@@ -76,7 +77,7 @@ void test_linearRegression(void) {
     layer->forward(layer, X, Y_pred);
     printRealArray(Y_pred->data, 10);
 
-    destroySGD(optim);
+    destroySGD(&optim);
     destroyLinearLayer(layer);
     destroyTensors(6, error, X_grad, loss_grad, X, Y, Y_pred);
     destroyRNG(rng);
@@ -112,7 +113,7 @@ void test_binaryClassification(void) {
     /* NOTE Not initializing the weights to make learning start from a random
      * guess */
 
-    LearnableParam params[] = {layer->weights, layer->bias};
+    LearnableParam* params[] = {layer->weights, layer->bias};
     SGD optim = createSGD(0.1, params, 2);
 
     Tensor* logits = createTensor(batch, n, classes);
@@ -128,7 +129,7 @@ void test_binaryClassification(void) {
     size_t decisions[batch];
 
     for (size_t i = 0; i < epochs; i++) {
-        optim.zeroGrads(optim);
+        optim.zeroGrads(&optim);
 
         layer->forward(layer, X, logits);
 
@@ -148,7 +149,7 @@ void test_binaryClassification(void) {
         ceLoss.backward(&ceLoss, labels, loss_grad);
         layer->backward(layer, loss_grad, X_grad);
 
-        optim.step(optim);
+        optim.step(&optim);
     }
 
     printf("Final error: %.5f, training errors:\n", prev_err);
@@ -161,7 +162,7 @@ void test_binaryClassification(void) {
     printf("Accuracy: %.2f\n", accuracyScore(decisions, labels, batch));
 
     destroyCrossEntropyLoss(&ceLoss);
-    destroySGD(optim);
+    destroySGD(&optim);
     destroyLinearLayer(layer);
     destroyTensors(5, loss, loss_grad, X, X_grad, logits);
     destroyRNG(rng);
@@ -202,7 +203,7 @@ void test_multiClassClassification(void) {
     /* NOTE Not initializing the weights to make learning start from a random
      * guess */
 
-    LearnableParam params[] = {layer->weights, layer->bias};
+    LearnableParam* params[] = {layer->weights, layer->bias};
     SGD optim = createSGD(0.05, params, 2);
 
     Tensor* logits = createTensor(batch, n, classes);
@@ -218,7 +219,7 @@ void test_multiClassClassification(void) {
     size_t decisions[batch];
 
     for (size_t i = 0; i < epochs; i++) {
-        optim.zeroGrads(optim);
+        optim.zeroGrads(&optim);
 
         layer->forward(layer, X, logits);
 
@@ -242,7 +243,7 @@ void test_multiClassClassification(void) {
         ceLoss.backward(&ceLoss, labels, loss_grad);
         layer->backward(layer, loss_grad, X_grad);
 
-        optim.step(optim);
+        optim.step(&optim);
     }
 
     printf("Multi-Class Final Loss:   %.4f\n", final_loss);
@@ -258,7 +259,7 @@ void test_multiClassClassification(void) {
     printf("Accuracy: %.2f\n", accuracyScore(decisions, labels, batch));
 
     destroyCrossEntropyLoss(&ceLoss);
-    destroySGD(optim);
+    destroySGD(&optim);
     destroyLinearLayer(layer);
     destroyTensors(5, loss, loss_grad, X, X_grad, logits);
     destroyRNG(rng);

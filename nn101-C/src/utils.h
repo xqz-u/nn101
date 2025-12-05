@@ -5,7 +5,7 @@
 
 #include <gsl/gsl_rng.h>
 
-#include "nn_types.h"
+#include "learnable_param.h"
 
 typedef struct {
     double* array;
@@ -20,7 +20,7 @@ void destroyRNG(gsl_rng* rng);
 double computeMean(double array[], size_t size);
 double computeStd(double array[], size_t size);
 double relativeError(double a, double b);
-void zeroGrads(LearnableParam params[], size_t params_count);
+void zeroGrads(LearnableParam* params[], size_t params_count);
 void printIntArray(size_t a[], size_t size);
 double max(double* a, size_t size);
 void simpleInference(size_t samples_count,

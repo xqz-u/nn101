@@ -5,9 +5,9 @@
 #include <unistd.h>
 
 #include "finite_diff.h"
+#include "learnable_param.h"
 #include "linear.h"
 #include "nn_math.h"
-#include "nn_types.h"
 #include "tensor.h"
 #include "utils.h"
 
@@ -57,14 +57,14 @@ static Linear* createCommonLinearLayer(void) {
         6, 1, 3, 9, 7, 8, 7, 7, 7, 1, 9, 9, 9, 3, 2, 5, 4, 1, 6, 3, 7, 4, 5,
         6, 9, 8, 4, 9, 4, 2, 6, 6, 7, 2, 8, 2, 9, 1, 3, 5, 5, 1, 7, 8, 6, 5,
         8, 7, 5, 1, 6, 9, 2, 5, 9, 5, 9, 4, 7, 6, 2, 6, 1, 1, 5, 3};
-    for (size_t i = 0; i < layer->weights.param->flat_size; i++) {
-        layer->weights.param->data[i] = weights_T[i];
+    for (size_t i = 0; i < layer->weights->param->flat_size; i++) {
+        layer->weights->param->data[i] = weights_T[i];
     }
 
     /* Shape: flat_features_out */
     double bias[] = {9, 3, 1, 5, 8, 6, 9, 2, 1};
-    for (size_t i = 0; i < layer->bias.param->flat_size; i++) {
-        layer->bias.param->data[i] = bias[i];
+    for (size_t i = 0; i < layer->bias->param->flat_size; i++) {
+        layer->bias->param->data[i] = bias[i];
     }
 
     return layer;
@@ -76,7 +76,7 @@ static void linearLayerFullPass(Linear* layer,
                                 double expected_Y[],
                                 double expected_dLdW[],
                                 double expected_dLdX[]) {
-    zeroGrads((LearnableParam[]){layer->weights, layer->bias}, 2);
+    zeroGrads((LearnableParam*[]){layer->weights, layer->bias}, 2);
 
     layer->forward(layer, X, Y);
 
@@ -92,14 +92,14 @@ static void linearLayerFullPass(Linear* layer,
 
     layer->backward(layer, dLdY, dLdX);
 
-    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_dLdW, layer->weights.grad->data,
-                                   layer->weights.grad->flat_size);
+    TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_dLdW, layer->weights->grad->data,
+                                   layer->weights->grad->flat_size);
 
     /* NOTE Semplification derived by assumption in above comment. */
     /* Shape: flat_features_out */
     double samples = X->n * X->batch;
-    TEST_ASSERT_EACH_EQUAL_DOUBLE(samples, layer->bias.grad->data,
-                                  layer->bias.grad->flat_size);
+    TEST_ASSERT_EACH_EQUAL_DOUBLE(samples, layer->bias->grad->data,
+                                  layer->bias->grad->flat_size);
 
     TEST_ASSERT_EQUAL_DOUBLE_ARRAY(expected_dLdX, dLdX->data, dLdX->flat_size);
 
@@ -232,8 +232,8 @@ void test_linearForward(void) {
     Linear* layer = createLinearLayer(IN_FEATURES, OUT_FEATURES);
 
     /* bias vector of 1 */
-    destroyTensor(layer->bias.param);
-    layer->bias.param = onesVector(OUT_FEATURES);
+    destroyTensor(layer->bias->param);
+    layer->bias->param = onesVector(OUT_FEATURES);
 
     /* initialize output */
     Tensor* Y = createTensor(SAMPLES, ROWS, OUT_FEATURES);
@@ -244,14 +244,14 @@ void test_linearForward(void) {
         35, 70, 105, 39, 78, 117, 34, 68, 102, 21, 42, 63,
         11, 22, 33,  22, 44, 66,  18, 36, 54,  23, 46, 69};
     for (size_t i = 0; i < Y->flat_size; i++) {
-        expected[i] += layer->bias.param->data[0];
+        expected[i] += layer->bias->param->data[0];
     }
 
     /* initialize the weights */
     for (size_t i = 1; i < OUT_FEATURES + 1; i++) {
         for (size_t j = 0; j < IN_FEATURES; j++) {
-            size_t idx = indexMatrix(layer->weights.param, i - 1, j);
-            layer->weights.param->data[idx] = (double)i;
+            size_t idx = indexMatrix(layer->weights->param, i - 1, j);
+            layer->weights->param->data[idx] = (double)i;
         }
     }
 
@@ -278,23 +278,25 @@ void test_linearBackward3d(void) {
     Tensor* Y = createTensor(SAMPLES, ROWS, OUT_FEATURES);
 
     Linear* layer = createLinearLayer(IN_FEATURES, OUT_FEATURES);
-    /* No need to randomly initialize the weights, they are controlled in these
+    /* No need to randomly initialize the weights, they are controlled in
+these
      * tests */
 
     /* To check the correctness of the math, we control the learnable params
      * default initialization */
-    /* Below weights are transposed (same happens inside the linear layer). */
+    /* Below weights are transposed (same happens inside the linear layer).
+     */
     /* Shape: features_in * features_out */
     double weights_T[OUT_FEATURES * IN_FEATURES] = {2, 3, 2, 4, 2, 3, 4, 3,
                                                     6, 9, 2, 8, 1, 1, 1};
-    for (size_t i = 0; i < layer->weights.param->flat_size; i++) {
-        layer->weights.param->data[i] = weights_T[i];
+    for (size_t i = 0; i < layer->weights->param->flat_size; i++) {
+        layer->weights->param->data[i] = weights_T[i];
     }
 
     /* Shape: features_out */
     double bias[] = {2, 5, 8};
-    for (size_t i = 0; i < layer->bias.param->flat_size; i++) {
-        layer->bias.param->data[i] = bias[i];
+    for (size_t i = 0; i < layer->bias->param->flat_size; i++) {
+        layer->bias->param->data[i] = bias[i];
     }
 
     double expected_Y[SAMPLES * ROWS * OUT_FEATURES] = {

@@ -31,7 +31,7 @@ double finiteDiffLinearLayer(Linear* layer,
     Tensor* grad_out = zerosLike(Y);
     randUniformTensor(grad_out, 0.5, rng);
 
-    zeroGrads((LearnableParam[]){layer->weights, layer->bias}, 2);
+    zeroGrads((LearnableParam*[]){layer->weights, layer->bias}, 2);
     layer->backward(layer, grad_out, grad_in);
 
     double max_rel_err = 0.0;
@@ -76,8 +76,8 @@ double finiteDiffLinearWeights(Linear* layer,
                                double eps,
                                gsl_rng* rng) {
     Tensor* grad_in = zerosLike(X);
-    double ret = finiteDiffLinearLayer(layer, grad_in, layer->weights.grad,
-                                       layer->weights.param, X, eps, rng);
+    double ret = finiteDiffLinearLayer(layer, grad_in, layer->weights->grad,
+                                       layer->weights->param, X, eps, rng);
     destroyTensor(grad_in);
     return ret;
 }
@@ -87,8 +87,8 @@ double finiteDiffLinearBias(Linear* layer,
                             double eps,
                             gsl_rng* rng) {
     Tensor* grad_in = zerosLike(X);
-    double ret = finiteDiffLinearLayer(layer, grad_in, layer->bias.grad,
-                                       layer->bias.param, X, eps, rng);
+    double ret = finiteDiffLinearLayer(layer, grad_in, layer->bias->grad,
+                                       layer->bias->param, X, eps, rng);
     destroyTensor(grad_in);
     return ret;
 }

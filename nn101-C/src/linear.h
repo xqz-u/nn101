@@ -3,7 +3,7 @@
 
 #include <gsl/gsl_rng.h>
 
-#include "nn_types.h"
+#include "learnable_param.h"
 #include "tensor.h"
 
 // TODO comment shape semantics
@@ -12,8 +12,8 @@ struct Linear {
     size_t in_features;
     size_t out_features;
 
-    LearnableParam weights;
-    LearnableParam bias;
+    LearnableParam* weights;
+    LearnableParam* bias;
 
     Tensor* last_input;
 

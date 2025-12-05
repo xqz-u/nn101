@@ -1,5 +1,4 @@
 #include <math.h>
-#include "nn_types.h"
 
 #include "utils.h"
 
@@ -51,9 +50,9 @@ double relativeError(double a, double b) {
     return (sum > 1e-8) ? diff / sum : diff;
 }
 
-void zeroGrads(LearnableParam params[], size_t params_count) {
+void zeroGrads(LearnableParam* params[], size_t params_count) {
     for (size_t i = 0; i < params_count; i++) {
-        tensorFill(params[i].grad, 0.0);
+        tensorFill(params[i]->grad, 0);
     }
 }
 

@@ -5,28 +5,28 @@
 
 #include "linear.h"
 #include "nn_math.h"
-#include "nn_types.h"
+#include "tensor.h"
 
 void initLinearLayer(Linear* layer, gsl_rng* rng) {
-    kaimingUniform(layer->weights.param, rng);
-    kaimingUniform(layer->bias.param, rng);
+    kaimingUniform(layer->weights->param, rng);
+    kaimingUniform(layer->bias->param, rng);
 }
 
 void resetGradientsLinear(Linear* layer) {
-    tensorFill(layer->weights.grad, 0);
-    tensorFill(layer->bias.grad, 0);
+    tensorFill(layer->weights->grad, 0);
+    tensorFill(layer->bias->grad, 0);
 }
 
 /* Operates like pytorch: if the input `X` has more than 2 dimensions, only the
  * last is preserved while the others are coalesced into a single one to force a
  * 2D matrix. */
 void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
-    /* Ensure not to accumulate output during repeated calls to forward. */
-    tensorFill(Y, 0.0);
+    /* Stay safe & prevent gradient accumulation. */
+    tensorFill(Y, 0);
 
-    transpose(layer->weights.param, layer->weights_T);
+    transpose(layer->weights->param, layer->weights_T);
     batchMatMul(X, layer->weights_T, Y);
-    addTensorAndVector(Y, layer->bias.param);
+    addTensorAndVector(Y, layer->bias->param);
 
     layer->last_input = X;
 }
@@ -37,6 +37,9 @@ void forwardLinear(Linear* layer, Tensor* X, Tensor* Y) {
  *                  the previous layer. */
 void backwardLinear(Linear* layer, Tensor* grad_out, Tensor* grad_in) {
     assert(layer->last_input != nullptr);
+
+    /* Stay safe & prevent gradient accumulation. */
+    tensorFill(grad_in, 0);
 
     /* Rank 2 is forced upon gradients & inputs. Also check the expected shape
      * of the gradient passed in via chain rule. */
@@ -59,11 +62,11 @@ void backwardLinear(Linear* layer, Tensor* grad_out, Tensor* grad_in) {
     flattenFirstDims(layer->last_input, &last_input_view);
 
     /* dL/dW = (dL/dY)^T * X */
-    matMul(&grad_out_T_view, &last_input_view, layer->weights.grad);
+    matMul(&grad_out_T_view, &last_input_view, layer->weights->grad);
     /* dL/db = 1s * dL/dY == sum(dL/dY, axis=0) */
-    matrixSum(&grad_out_view, 0, layer->bias.grad);
+    matrixSum(&grad_out_view, 0, layer->bias->grad);
     /* dL/dX = dL/dY * W */
-    batchMatMul(grad_out, layer->weights.param, grad_in);
+    batchMatMul(grad_out, layer->weights->param, grad_in);
 
     layer->last_input = nullptr;
 }
@@ -74,28 +77,14 @@ Linear* createLinearLayer(size_t in_features, size_t out_features) {
         return nullptr;
     }
 
-    layer->weights = (LearnableParam){};
-    layer->bias = (LearnableParam){};
-
-    layer->bias.param = createVector(out_features);
-    if (layer->bias.param == nullptr) {
-        destroyLinearLayer(layer);
-        return nullptr;
-    }
-    layer->bias.grad = zerosLike(layer->bias.param);
-    if (layer->bias.grad == nullptr) {
+    layer->weights = createLearnableParam(1, out_features, in_features);
+    if (layer->weights == nullptr) {
         destroyLinearLayer(layer);
         return nullptr;
     }
 
-    layer->weights.param = createMatrix(out_features, in_features);
-    if (layer->weights.param == nullptr) {
-        destroyLinearLayer(layer);
-        return nullptr;
-    }
-
-    layer->weights.grad = zerosLike(layer->weights.param);
-    if (layer->weights.grad == nullptr) {
+    layer->bias = createLearnableParam(1, 1, out_features);
+    if (layer->bias == nullptr) {
         destroyLinearLayer(layer);
         return nullptr;
     }
@@ -123,18 +112,9 @@ void destroyLinearLayer(Linear* layer) {
         return;
     }
 
-    if (layer->bias.param != nullptr) {
-        destroyTensor(layer->bias.param);
-    }
-    if (layer->bias.grad != nullptr) {
-        destroyTensor(layer->bias.grad);
-    }
-    if (layer->weights.param != nullptr) {
-        destroyTensor(layer->weights.param);
-    }
-    if (layer->weights.grad != nullptr) {
-        destroyTensor(layer->weights.grad);
-    }
+    destroyLearnableParam(layer->weights);
+    destroyLearnableParam(layer->bias);
+
     if (layer->weights_T != nullptr) {
         destroyTensor(layer->weights_T);
     }
