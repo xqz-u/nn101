@@ -83,7 +83,7 @@ void printRealArrayBase(double a[], size_t size, const char* fmt) {
 
 void var_printRealArray(PrintArgs args) {
     const char* final_fmt = args.fmt ? args.fmt : "%.2f";
-    return printRealArrayBase(args.array, args.size, final_fmt);
+    printRealArrayBase(args.array, args.size, final_fmt);
 }
 
 double max(double* a, size_t size) {
