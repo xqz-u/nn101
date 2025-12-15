@@ -2,6 +2,7 @@
 
 #include "unity.h"
 
+#include <gsl/gsl_statistics_double.h>
 #include <string.h>
 
 #include "activation.h"
@@ -71,7 +72,7 @@ void mlpXOR(size_t dimensions[],
         model.forward(&model, X);
 
         loss_fn.forward(&loss_fn, model.logits[output_idx], labels, loss_val);
-        double new_err = computeMean(loss_val->data, loss_val->flat_size);
+        double new_err = gsl_stats_mean(loss_val->data, 1, loss_val->flat_size);
         TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(prev_err, new_err);
 
         prev_err = new_err;

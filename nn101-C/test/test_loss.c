@@ -3,6 +3,7 @@
 #include "unity.h"
 
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_statistics_double.h>
 
 #include "learnable_param.h"
 #include "linear.h"
@@ -57,7 +58,7 @@ void test_linearRegression(void) {
 
         mse.forward(Y_pred, Y, error);
 
-        double new_err = computeMean(error->data, error->flat_size);
+        double new_err = gsl_stats_mean(error->data, 1, error->flat_size);
         TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(prev_err, new_err);
 
         prev_err = new_err;
@@ -135,7 +136,7 @@ void test_binaryClassification(void) {
 
         ceLoss.forward(&ceLoss, logits, labels, loss);
 
-        double new_err = computeMean(loss->data, loss->flat_size);
+        double new_err = gsl_stats_mean(loss->data, 1, loss->flat_size);
         TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(prev_err, new_err);
 
         prev_err = new_err;
@@ -225,7 +226,7 @@ void test_multiClassClassification(void) {
 
         ceLoss.forward(&ceLoss, logits, labels, loss);
 
-        double current_loss = computeMean(loss->data, loss->flat_size);
+        double current_loss = gsl_stats_mean(loss->data, 1, loss->flat_size);
         final_loss = current_loss;
         if (i == 0) {
             initial_loss = current_loss;

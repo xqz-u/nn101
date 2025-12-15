@@ -23,26 +23,6 @@ void destroyRNG(gsl_rng* rng) {
     }
 }
 
-double computeMean(double array[], size_t size) {
-    double sum = 0.f;
-    for (size_t i = 0; i < size; i++) {
-        sum += array[i];
-    }
-    return sum / size;
-}
-
-double computeStd(double array[], size_t size) {
-    double avg = computeMean(array, size);
-
-    double diffs = 0.f;
-    for (size_t i = 0; i < size; i++) {
-        double delta = array[i] - avg;
-        diffs += delta * delta;
-    }
-
-    return sqrt(diffs / size);
-}
-
 double relativeError(double a, double b) {
     double diff = fabs(a - b);
     double sum = fabs(a) + fabs(b);
@@ -104,4 +84,19 @@ void simpleInference(size_t samples_count,
         Tensor tmp = {.flat_size = classes, .data = &logits->data[i * classes]};
         predictions[i] = argmax(&tmp);
     }
+}
+
+size_t countCorrect(size_t predictions[], size_t labels[], size_t size) {
+    size_t correct = 0;
+    for (size_t i = 0; i < size; i++) {
+        if (predictions[i] == labels[i]) {
+            correct++;
+        }
+    }
+    return correct;
+}
+
+/* TODO move somewhere else eg utils */
+double accuracyScore(size_t predictions[], size_t labels[], size_t size) {
+    return (double)countCorrect(predictions, labels, size) / size;
 }

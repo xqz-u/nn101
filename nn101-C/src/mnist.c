@@ -1,30 +1,11 @@
 #include <arpa/inet.h>
 #include <assert.h>
+#include <gsl/gsl_statistics_double.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mnist.h"
-#include "utils.h"
-
-struct MNISTMeta {
-    uint32_t n_samples;
-    uint32_t width;
-    uint32_t height;
-    uint32_t flat_img_size;
-};
-
-/* Theoretically I could make the fields of MNISTMeta smaller, righ?  Like
- * uint8_t */
-
-struct MNIST {
-    DatasetPartition partition;
-    MNISTMeta* meta;
-    double* data;
-    uint8_t* labels;
-    double mean;
-    double std;
-};
 
 void read_mnist_header(FILE* fp,
                        const char* path,
@@ -88,6 +69,7 @@ bool read_mnist_metadata(FILE* fp,
      * can copy into the struct directly. */
     memcpy(metadata, &meta[1], 3 * sizeof(uint32_t));
     metadata->flat_img_size = metadata->width * metadata->height;
+    metadata->n_classes = 10;
 
     if (verbose) {
         printf("Magic number: %u\n", meta[0]);
@@ -120,8 +102,8 @@ void scale_uint8_array(size_t size, uint8_t* arr, double* scaled_arr) {
 void standardize_double_array(size_t size,
                               double* arr,
                               double summary_stats[2]) {
-    summary_stats[0] = computeMean(arr, size);
-    summary_stats[1] = computeStd(arr, size);
+    summary_stats[0] = gsl_stats_mean(arr, 1, size);
+    summary_stats[1] = gsl_stats_sd(arr, 1, size);
 
     for (size_t i = 0; i < size; i++) {
         arr[i] = (arr[i] - summary_stats[0]) / summary_stats[1];

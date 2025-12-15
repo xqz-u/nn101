@@ -313,6 +313,9 @@ void ensureTensorCapacity(Tensor** source, Tensor* reference) {
     /* Make sure to have enough memory if the batch size or sequence lengh
      * changes. */
     if (reference->flat_size <= current_capacity) {
+        /* FIXME Brittle hack, design better. */
+        /* Conform to the posssibly smaller batch size of the ref tensor.*/
+        (*source)->batch = reference->batch;
         return;
     }
     if (!is_first_time) {

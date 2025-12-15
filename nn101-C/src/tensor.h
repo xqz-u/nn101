@@ -8,10 +8,11 @@
 typedef struct Tensor Tensor;
 struct Tensor {
     double* data;
+
     size_t batch;
     size_t n;
     size_t features;
-    size_t flat_size;
+    size_t flat_size;  // product of dimensions
 
     bool owns_data;
 

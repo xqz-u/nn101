@@ -1,4 +1,4 @@
-#import "mlp.h"
+#include "mlp.h"
 
 void forwardMLP(MLP* model, Tensor* X) {
     for (size_t i = 0; i < model->n_layers; i++) {
@@ -27,6 +27,8 @@ void backwardMLP(MLP* model, Tensor* X_grad) {
     Tensor* grad_out = model->logits_grad[model->n_layers - 1];
     ELU h = model->activation;
 
+    /* Mixing decrement (post-order) & guard evaluation ensures no wrap-around
+     * of unsigned ints below 0 -> no infinite loop. */
     for (size_t i = model->n_layers; i-- > 1;) {
         Linear* linear = model->linears[i];
         size_t prev_layer_idx = i - 1;
@@ -57,13 +59,13 @@ void backwardMLP(MLP* model, Tensor* X_grad) {
 MLP createMLP(size_t n_features, size_t features[], gsl_rng* rng) {
     size_t n_layers = n_features - 1;
 
-    Linear** linears = malloc(n_layers * sizeof(Linear*));
-
     Tensor** logits = calloc(n_layers, sizeof(Tensor*));
     Tensor** logits_grad = calloc(n_layers, sizeof(Tensor*));
 
     Tensor** activations = calloc(n_layers - 1, sizeof(Tensor*));
     Tensor** activations_grad = calloc(n_layers - 1, sizeof(Tensor*));
+
+    Linear** linears = malloc(n_layers * sizeof(Linear*));
 
     for (size_t i = 0; i < n_layers; i++) {
         size_t in_features = features[i];

@@ -17,8 +17,6 @@ void var_printRealArray(PrintArgs args);
 
 gsl_rng* initRNG(void);
 void destroyRNG(gsl_rng* rng);
-double computeMean(double array[], size_t size);
-double computeStd(double array[], size_t size);
 double relativeError(double a, double b);
 void zeroGrads(LearnableParam* params[], size_t params_count);
 void printIntArray(size_t a[], size_t size);
@@ -27,5 +25,7 @@ void simpleInference(size_t samples_count,
                      size_t classes,
                      Tensor* logits,
                      size_t predictions[samples_count]);
+size_t countCorrect(size_t predictions[], size_t labels[], size_t size);
+double accuracyScore(size_t predictions[], size_t labels[], size_t size);
 
 #endif  // UTILS_H

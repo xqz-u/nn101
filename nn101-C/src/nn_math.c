@@ -39,13 +39,3 @@ double logSumExp(double* data, size_t size) {
     /* Restore after shifting */
     return log(sum) + max_val;
 }
-
-double accuracyScore(size_t predictions[], size_t labels[], size_t size) {
-    size_t correct = 0;
-    for (size_t i = 0; i < size; i++) {
-        if (predictions[i] == labels[i]) {
-            correct++;
-        }
-    }
-    return (double)correct / size;
-}

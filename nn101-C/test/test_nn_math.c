@@ -2,6 +2,7 @@
 
 #include "unity.h"
 
+#include <gsl/gsl_statistics_double.h>
 #include <math.h>
 
 #include "nn_math.h"
@@ -43,8 +44,8 @@ void test_kaimingMeanStd(void) {
     double expected_mean = (-bound + bound) / 2;
     double expected_std = sqrt(pow(bound - -bound, 2) / 12);
 
-    double mean = computeMean(M->data, M->flat_size);
-    double std = computeStd(M->data, M->flat_size);
+    double mean = gsl_stats_mean(M->data, 1, M->flat_size);
+    double std = gsl_stats_sd(M->data, 1, M->flat_size);
 
     TEST_ASSERT_DOUBLE_WITHIN(1e-2, expected_mean, mean);
     TEST_ASSERT_DOUBLE_WITHIN(1e-2, expected_std, std);

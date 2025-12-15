@@ -37,6 +37,21 @@ SGD createSGD(double lr, LearnableParam* params[], size_t params_count) {
     return optimizer;
 }
 
+SGD createSGDFromModel(double lr, MLP* model) {
+    /* weights matrix + bias vector for each block */
+    size_t tot_learnable_params = model->n_layers * 2;
+    LearnableParam* params[tot_learnable_params];
+
+    size_t p_idx = 0;
+    for (size_t i = 0; i < model->n_layers; i++) {
+        Linear* layer = model->linears[i];
+        params[p_idx++] = layer->weights;
+        params[p_idx++] = layer->bias;
+    }
+
+    return createSGD(lr, params, tot_learnable_params);
+}
+
 void destroySGD(SGD* optimizer) {
     if (optimizer->params == nullptr) {
         return;

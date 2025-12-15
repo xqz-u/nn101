@@ -42,9 +42,9 @@ MSELoss createMSELoss(void) {
  * division in softmax prevents possible over/underflows. */
 void crossEntropyLoss(CrossEntropyLoss* self,
                       Tensor* logits,
-                      size_t labels[],
+                      size_t* labels,
                       Tensor* loss) {
-    assert(logits->features == self->classes);
+    assert(logits->features == self->n_classes);
 
     Tensor logits_2d = {};
     flattenFirstDims(logits, &logits_2d);
@@ -56,17 +56,17 @@ void crossEntropyLoss(CrossEntropyLoss* self,
     ensureTensorCapacity(&self->probabilities, logits);
 
     for (size_t i = 0; i < logits_2d.n; i++) {
-        size_t sample_start = i * self->classes;
+        size_t sample_start = i * self->n_classes;
         double* sample_logits = &logits->data[sample_start];
 
         size_t target_class = labels[i];
-        double sample_lse = logSumExp(sample_logits, self->classes);
+        double sample_lse = logSumExp(sample_logits, self->n_classes);
         loss->data[i] = sample_lse - sample_logits[target_class];
 
         /* Keep using the LSE trick to *cache the probabilities* obtained from
          * logits (used in the backward pass): e^x_i / e^LSE = e^(x_i - LSE). */
         double* sample_probs = &self->probabilities->data[sample_start];
-        for (size_t j = 0; j < self->classes; j++) {
+        for (size_t j = 0; j < self->n_classes; j++) {
             sample_probs[j] = exp(sample_logits[j] - sample_lse);
         }
     }
@@ -77,19 +77,19 @@ void crossEntropyLoss(CrossEntropyLoss* self,
 void crossEntropyLossGrad(CrossEntropyLoss* self,
                           size_t labels[],
                           Tensor* grad_logits) {
-    assert(grad_logits->features == self->classes);
+    assert(grad_logits->features == self->n_classes);
 
     Tensor grad_logits_2d = {};
     flattenFirstDims(grad_logits, &grad_logits_2d);
 
     for (size_t i = 0; i < grad_logits_2d.n; i++) {
-        size_t sample_start = i * self->classes;
+        size_t sample_start = i * self->n_classes;
         double* sample_probs = &self->probabilities->data[sample_start];
         double* sample_grads = &grad_logits->data[sample_start];
 
         size_t target_class = labels[i];
 
-        for (size_t j = 0; j < self->classes; j++) {
+        for (size_t j = 0; j < self->n_classes; j++) {
             double predicted_class_prob = sample_probs[j];
             sample_grads[j] = predicted_class_prob - (j == target_class);
         }
@@ -97,7 +97,7 @@ void crossEntropyLossGrad(CrossEntropyLoss* self,
 }
 
 CrossEntropyLoss createCrossEntropyLoss(size_t classes) {
-    return (CrossEntropyLoss){.classes = classes,
+    return (CrossEntropyLoss){.n_classes = classes,
                               .probabilities = nullptr,
                               .forward = &crossEntropyLoss,
                               .backward = &crossEntropyLossGrad};

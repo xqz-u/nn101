@@ -13,7 +13,7 @@ MSELoss createMSELoss(void);
 
 typedef struct CrossEntropyLoss CrossEntropyLoss;
 struct CrossEntropyLoss {
-    size_t classes;
+    size_t n_classes;
     Tensor* probabilities;
 
     void (*forward)(CrossEntropyLoss* self,

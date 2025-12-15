@@ -14,6 +14,5 @@ struct Fan {
 Fan computeFanInFanOut(Tensor* M);
 void kaimingUniform(Tensor* weights, gsl_rng* rng);
 double logSumExp(double* data, size_t size);
-double accuracyScore(size_t predictions[], size_t labels[], size_t size);
 
 #endif  // NN_MATH_H

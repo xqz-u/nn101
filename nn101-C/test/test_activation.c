@@ -2,6 +2,7 @@
 
 #include "unity.h"
 
+#include <gsl/gsl_statistics_double.h>
 #include <math.h>
 #include <string.h>
 
@@ -131,7 +132,7 @@ void test_eluXOR(void) {
         /* Loss */
         loss_fn.forward(&loss_fn, logits, labels, loss_val);
 
-        double new_err = computeMean(loss_val->data, loss_val->flat_size);
+        double new_err = gsl_stats_mean(loss_val->data, 1, loss_val->flat_size);
         TEST_ASSERT_LESS_OR_EQUAL_DOUBLE(prev_err, new_err);
 
         prev_err = new_err;
