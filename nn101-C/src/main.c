@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "logs.h"
 #include "loss.h"
 #include "mlp.h"
 #include "mnist.h"
@@ -21,6 +22,7 @@ struct TrainState {
     Tensor* loss;
     size_t tot_batches;
     size_t dataset_size;
+    size_t epoch;
     gsl_rng* rng;
 };
 
@@ -29,7 +31,7 @@ struct HyperParams {
     size_t batch_size;
     size_t eval_batch_size;
     size_t train_epochs;
-    size_t batch_print_interval;
+    size_t batch_log_interval;
     size_t eval_every;
     size_t n_hidden_dims;
     size_t* hidden_dims;
@@ -61,6 +63,7 @@ TrainState createTrainState(size_t batch_size, MNIST* ds) {
                         .loss = loss,
                         .dataset_size = dataset_size,
                         .tot_batches = tot_batches,
+                        .epoch = 0,
                         .rng = rng};
 }
 
@@ -72,18 +75,6 @@ void destroyTrainState(TrainState* ts) {
     free(ts->targets);
     destroyRNG(ts->rng);
     destroyTensors(3, ts->X, ts->X_grad, ts->loss);
-}
-
-void printEpochProgress(size_t current_batch,
-                        size_t print_interval,
-                        size_t tot_batches,
-                        double running_loss) {
-    if (current_batch % print_interval == 0 ||
-        current_batch == tot_batches - 1) {
-        printf("\r\tBatch %lu/%lu | Loss: %.4f", current_batch, tot_batches,
-               running_loss);
-        fflush(stdout);
-    }
 }
 
 /* NOTE a bunch of useless copies of data around, make it simpler & duplicate
@@ -191,15 +182,16 @@ double trainOneEpoch(TrainState* ts,
                      SGD* optim,
                      CrossEntropyLoss* loss_fn,
                      MNIST* train_ds,
-                     HyperParams* hp) {
+                     HyperParams* hp,
+                     FILE* batch_logs) {
     /* Shuffle dataset idxs to get random training batches. */
     gsl_ran_shuffle(ts->rng, ts->sample_indices, ts->dataset_size,
                     sizeof(size_t));
 
     double epoch_loss = 0;
 
-    size_t batch_n = 0;
     size_t batches_seen = 0;
+    size_t global_step = ts->epoch * ts->tot_batches;
 
     for (size_t i = 0; i < ts->dataset_size; i += hp->batch_size) {
         size_t current_batch_size = hp->batch_size;
@@ -218,10 +210,13 @@ double trainOneEpoch(TrainState* ts,
         epoch_loss += (batch_mean_loss * current_batch_size);  // un-average)
         batches_seen += current_batch_size;
 
-        printEpochProgress(batch_n, hp->batch_print_interval, ts->tot_batches,
-                           epoch_loss / batches_seen);
+        if (global_step % hp->batch_log_interval == 0) {
+            fprintf(batch_logs, "%lu,%.2f\n", global_step,
+                    epoch_loss / batches_seen);
+            fflush(batch_logs);
+        }
 
-        batch_n += 1;
+        global_step++;
     }
 
     /* Reset for next epoch. */
@@ -230,7 +225,7 @@ double trainOneEpoch(TrainState* ts,
     return epoch_loss / ts->dataset_size;
 }
 
-void trainOnMnist(HyperParams* hp) {
+void trainOnMnist(HyperParams* hp, Logs* logs) {
     MNIST* train_ds = create_mnist_dataset(TRAIN, false);
     MNIST* test_ds = create_mnist_dataset(EVAL, false);
 
@@ -253,16 +248,15 @@ void trainOnMnist(HyperParams* hp) {
     SGD optim = createSGDFromModel(hp->lr, &model);
 
     for (size_t i = 0; i < hp->train_epochs; i++) {
-        printf("Epoch %lu/%lu\n", i, hp->train_epochs);
-
         /* Train */
         clock_t t = clock();
-        double train_loss =
-            trainOneEpoch(&ts, &model, &optim, &loss, train_ds, hp);
+        double train_loss = trainOneEpoch(&ts, &model, &optim, &loss, train_ds,
+                                          hp, logs->train_batch_logs);
         t = clock() - t;
         double time_elapsed = (double)t / CLOCKS_PER_SEC;
-        printf("\n\tTrain time: %.2fs | Train Loss: %.4f", time_elapsed,
-               train_loss);
+        fprintf(logs->train_logs, "%lu,%.3f,%.2f\n", i, train_loss,
+                time_elapsed);
+        fflush(logs->train_logs);
 
         /* Test */
         if (i % hp->eval_every == 0 || i == hp->train_epochs - 1) {
@@ -270,10 +264,12 @@ void trainOnMnist(HyperParams* hp) {
             double val_acc = evaluate(&model, test_ds, hp->eval_batch_size);
             t = clock() - t;
             time_elapsed = (double)t / CLOCKS_PER_SEC;
-            printf("| Eval time: %.2fs | Val Acc: %.2f", time_elapsed, val_acc);
+            fprintf(logs->eval_logs, "%lu,%.4f,%.2f\n", i, val_acc,
+                    time_elapsed);
+            fflush(logs->eval_logs);
         }
 
-        printf("\n");
+        ts.epoch++;
     }
 
     destroy_mnist_dataset(train_ds);
@@ -284,20 +280,29 @@ void trainOnMnist(HyperParams* hp) {
     destroyCrossEntropyLoss(&loss);
 }
 
+/* TODO CLI params */
+/* TODO save trained model */
 int main(void) {
     size_t hidden_dims[] = {128};
     size_t n_hidden_dims = sizeof(hidden_dims) / sizeof(hidden_dims[0]);
 
-    HyperParams hp = {/* .train_epochs = 50, */
-                      .train_epochs = 1,
+    Logs logs;
+    initLogs(&logs, "/Users/xqz-u/hack/nn-101/nn101-C/logs/train.csv",
+             "/Users/xqz-u/hack/nn-101/nn101-C/logs/train_batch.csv",
+             "/Users/xqz-u/hack/nn-101/nn101-C/logs/test.csv");
+
+    HyperParams hp = {.train_epochs = 20,
                       .batch_size = 128,
                       .eval_batch_size = 256,
-                      /* .batch_print_interval = 50, */
-                      .batch_print_interval = 1,
+                      .batch_log_interval = 50,
                       .eval_every = 1,
                       .hidden_dims = hidden_dims,
                       .n_hidden_dims = n_hidden_dims,
                       .lr = 1e-2};
-    trainOnMnist(&hp);
+
+    trainOnMnist(&hp, &logs);
+
+    destroyLogs(&logs);
+
     return 0;
 }

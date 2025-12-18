@@ -27,8 +27,12 @@ void mseLossGrad(Tensor* pred, Tensor* target, Tensor* out) {
            pred->flat_size == target->flat_size &&
            target->flat_size == out->flat_size);
 
+    /* Scale loss gradients by batch size */
+    double batch_scale = (double)pred->batch;
+
     for (size_t i = 0; i < out->flat_size; i++) {
-        out->data[i] = mseScalarGrad(pred->data[i], target->data[i]);
+        out->data[i] =
+            mseScalarGrad(pred->data[i], target->data[i]) / batch_scale;
     }
 }
 
@@ -81,6 +85,8 @@ void crossEntropyLossGrad(CrossEntropyLoss* self,
 
     Tensor grad_logits_2d = {};
     flattenFirstDims(grad_logits, &grad_logits_2d);
+    /* Scale loss gradients by batch size */
+    double batch_scale = (double)grad_logits->batch;
 
     for (size_t i = 0; i < grad_logits_2d.n; i++) {
         size_t sample_start = i * self->n_classes;
@@ -91,7 +97,8 @@ void crossEntropyLossGrad(CrossEntropyLoss* self,
 
         for (size_t j = 0; j < self->n_classes; j++) {
             double predicted_class_prob = sample_probs[j];
-            sample_grads[j] = predicted_class_prob - (j == target_class);
+            sample_grads[j] =
+                (predicted_class_prob - (j == target_class)) / batch_scale;
         }
     }
 }

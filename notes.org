@@ -69,6 +69,7 @@ Backward pass:
 
 1. Prevent gradient accumulation bug: I was not zeroing out the weights & bias
    gradients before a backward pass in the Linear layer.
+2. I forgot to scale the loss gradients wrt to batch size...
 
 # C new discoveries
 
